@@ -1,16 +1,28 @@
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS problems CASCADE;
+DROP TABLE IF EXISTS tags CASCADE;
+DROP TABLE IF EXISTS problem_tags CASCADE;
+DROP TABLE IF EXISTS problem_sets CASCADE;
+DROP TABLE IF EXISTS contests CASCADE;
+DROP TABLE IF EXISTS problem_set_problems CASCADE;
+DROP TABLE IF EXISTS solved_problems CASCADE;
+DROP TABLE IF EXISTS submissions CASCADE;
+
+
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   handle VARCHAR(50) UNIQUE NOT NULL,
   email VARCHAR(100) UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  rating INTEGER DEFAULT 1500
+  rating INTEGER DEFAULT 1500,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE problems (
   id SERIAL PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   description TEXT,
-  difficulty VARCHAR(10) CHECK (difficulty IN ('Easy', 'Medium', 'Hard')),
+  difficulty VARCHAR(10) CHECK (difficulty IN ('Easy', 'Medium', 'Hard'))
 );
 
 CREATE TABLE tags (
@@ -39,8 +51,6 @@ CREATE TABLE contests (
   duration INTEGER,
   division INTEGER
 );
-
-
 
 CREATE TABLE problem_set_problems (
   problem_set_id INTEGER REFERENCES problem_sets(id) ON DELETE CASCADE,

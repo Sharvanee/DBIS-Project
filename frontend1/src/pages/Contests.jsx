@@ -63,6 +63,7 @@ const ContestList = () => {
             </tr>
           </thead>
           <tbody>
+            {/* console.log("Contests:", contests); */}
             {contests.map((contest, index) => (
               <tr key={index}>
                 <td>

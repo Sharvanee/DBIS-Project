@@ -22,7 +22,7 @@ const Problem = () => {
         }
 
         // Fetch problem data
-        const res = await fetch(`${apiUrl}/problems/${id}`, {
+        const res = await fetch(`${apiUrl}/problem/${id}`, {
           credentials: "include",
         });
 

@@ -33,13 +33,20 @@ const ProblemList = () => {
           credentials: "include",
         });
         const json = await res.json();
-        setProblems(json); // assuming backend sends an array of problems
+        
+        if (Array.isArray(json)) {
+          setProblems(json);
+        } else {
+          setProblems([]); // Prevents map() error
+        }
       } catch (err) {
         console.error("Failed to fetch problems:", err);
+        setProblems([]); // Handle errors by setting an empty array
       } finally {
         setLoading(false);
       }
     };
+    
 
     fetchProblems();
   }, []);

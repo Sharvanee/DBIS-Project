@@ -25,7 +25,7 @@ const Login = () => {
 
   // State for form data
   const [formData, setFormData] = useState({
-    identifier: "", // Can be handle or email
+    email: "", // Can be handle or email
     password: "",
     rememberMe: false,
   });
@@ -77,9 +77,9 @@ const Login = () => {
         <div>
           <input
             type="text"
-            placeholder="Handle or Email"
-            name="identifier"
-            value={formData.identifier}
+            placeholder="Email"
+            name="email"
+            value={formData.email}
             onChange={handleChange}
             required
           />

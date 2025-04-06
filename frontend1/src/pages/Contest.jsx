@@ -21,7 +21,7 @@ const Contest = () => {
         }
 
         // Fetch contest info
-        const res = await fetch(`${apiUrl}/contests/${id}`, {
+        const res = await fetch(`${apiUrl}/contest/${id}`, {
           credentials: "include",
         });
 
@@ -56,7 +56,7 @@ const Contest = () => {
         <ul>
           {contest.problems.map((problem) => (
             <li key={problem.id}>
-              <a href={`/problems/${problem.id}`}>{problem.title}</a> – {problem.difficulty}
+              <a href={`/problem/${problem.id}`}>{problem.title}</a> – {problem.difficulty}
             </li>
           ))}
         </ul>

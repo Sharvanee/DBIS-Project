@@ -34,6 +34,7 @@ import NotFound from "./pages/Notfound";
 import ProblemSet from "./pages/ProblemSet";
 import Problem from "./pages/Problem";
 import Contests from "./pages/Contests";
+import Contest from "./pages/Contest";
 import Profile from "./pages/Profile";
 // import Products from "./pages/Products";
 // import Cart from "./pages/Cart";
@@ -49,6 +50,7 @@ function App() {
       <Route path="*" element={<NotFound />} />
       <Route path="/problem-set" element={<ProblemSet />} />
       <Route path="/problem/:id" element={<Problem />} />
+      <Route path="/contest/:id" element={<Contest />} />
       <Route path="/contests" element={<Contests />} />
       <Route path="/profile" element={<Profile />} />
     </Routes>

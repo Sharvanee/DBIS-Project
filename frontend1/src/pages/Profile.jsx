@@ -53,7 +53,6 @@ const Profile = () => {
         <p><strong>Handle:</strong> {user.handle}</p>
         <p><strong>Email:</strong> {user.email}</p>
         <p><strong>Rating:</strong> {user.rating}</p>
-        <p><strong>Role:</strong> {user.role}</p>
         <p><strong>Problems Solved:</strong> {user.solved_count}</p>
         <p><strong>Submissions:</strong> {user.submission_count}</p>
         <p><strong>Joined:</strong> {new Date(user.created_at).toLocaleString()}</p>

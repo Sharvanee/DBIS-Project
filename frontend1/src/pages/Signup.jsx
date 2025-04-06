@@ -11,7 +11,7 @@ const Signup = () => {
         const response = await fetch(`${apiUrl}/isLoggedIn`, {
           credentials: "include",
         });
-        const data = await response.json();
+        await response.json();
         if (response.ok) {
           navigate("/dashboard");
         }
@@ -31,38 +31,56 @@ const Signup = () => {
 
   const [error, setError] = useState("");
   const [handleAvailable, setHandleAvailable] = useState(null);
+  const [, setHandle] = useState("");
+  const [typingTimeout, setTypingTimeout] = useState(null);
 
-  const handleChange = async (e) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    setFormData({ ...formData, [name]: value });
 
     if (name === "handle") {
-      checkHandleAvailability(value);
+      setHandle(value);
+      if (typingTimeout) clearTimeout(typingTimeout);
+
+      setTypingTimeout(setTimeout(() => {
+        checkHandleAvailability(value);
+      }, 500)); // Debounce for 500ms
     }
   };
 
   const checkHandleAvailability = async (handle) => {
-    if (!handle.trim()) return;
-
+    if (!handle.trim()) return false;
+  
     try {
       const response = await fetch(`${apiUrl}/checkHandle?handle=${handle}`);
       const data = await response.json();
-
-      setHandleAvailable(response.ok && data.available);
+      console.log("here1");
+      if (response.ok && data.available !== undefined) {
+        console.log("here2");
+        setHandleAvailable(data.available);
+        return data.available; // <-- Return the availability
+      } else {
+        console.log("here3");
+        setHandleAvailable(false);
+        return false; // <-- Add this return
+      }
     } catch (error) {
+      console.log("here4");
       console.error("Error checking handle availability:", error);
       setHandleAvailable(null);
+      return false; // <-- Add this return
     }
   };
+  
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!handleAvailable) {
+    // Double-check handle availability before submitting
+    const latestAvailability = await checkHandleAvailability(formData.handle);
+    if (!latestAvailability) {
       setError("Username (handle) is already taken. Please choose another.");
       return;
     }
@@ -75,9 +93,7 @@ const Signup = () => {
     try {
       const response = await fetch(`${apiUrl}/signup`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           handle: formData.handle,
@@ -87,7 +103,6 @@ const Signup = () => {
       });
 
       const data = await response.json();
-
       if (response.ok) {
         navigate("/dashboard");
       } else {
@@ -99,6 +114,7 @@ const Signup = () => {
     }
   };
 
+
   // Handle Google signup
   const handleGoogleSignup = () => {
     window.location.href = `${apiUrl}/auth/google`;
@@ -108,11 +124,11 @@ const Signup = () => {
     <div className="signup-container">
       <h2>Sign Up</h2>
       {error && <p className="error-message">{error}</p>}
-      
+
       <button onClick={handleGoogleSignup} className="google-signup-btn">
         Sign up with Google
       </button>
-      
+
       <p>OR</p>
 
       <form onSubmit={handleSubmit}>

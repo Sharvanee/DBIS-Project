@@ -17,7 +17,7 @@ const port = 4000;
 const pool = new Pool({
   user: "test",
   host: "localhost",
-  database: "cp",
+  database: "codeforces",
   password: "test",
   port: 5432,
 });
@@ -77,7 +77,7 @@ function isAuthenticated(req, res, next) {
 // use correct status codes and messages mentioned in the lab document
 app.post("/signup", async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { handle, email, password } = req.body;
 
     const email_in_use = await pool.query(
       "SELECT * FROM users WHERE email = $1",
@@ -89,15 +89,34 @@ app.post("/signup", async (req, res) => {
         .json({ message: "Error: Email is already registered." });
     }
 
-    const hashed_pwd = await bcrypt.hash(password, 10);
-    await pool.query(
-      "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3)",
-      [username, email, hashed_pwd]
+    const username_in_use = await pool.query(
+      "SELECT * FROM users WHERE handle = $1",
+      [handle]
     );
+    if (username_in_use.rows.length > 0) {
+      return res
+        .status(400)
+        .json({ message: "Error: Username is already registered." });
+    }
 
-    res
-      .status(200)
-      .json({ username, email, message: "User Registered Successfully" });
+    const hashed_pwd = await bcrypt.hash(password, 10);
+    const insertResult = await pool.query(
+      `INSERT INTO users (handle, email, password_hash, created_at) 
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP) 
+       RETURNING id, created_at;`,
+      [handle, email, hashed_pwd]
+    );
+    
+    const { id: userId, created_at } = insertResult.rows[0];
+    
+    res.status(200).json({
+      id: userId,
+      handle,
+      email,
+      created_at,
+      message: "User Registered Successfully",
+    });
+    
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({ message: "Error signing up" });
@@ -110,16 +129,14 @@ app.post("/signup", async (req, res) => {
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await pool.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
-
+    const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    console.log("user", user.rows);
     if (user.rows.length === 0) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid credentials" });
     }
-
+    console.log("buzzzzzzz");
     const correct_pwd = await bcrypt.compare(
       password,
       user.rows[0].password_hash
@@ -131,8 +148,8 @@ app.post("/login", async (req, res) => {
     }
 
     req.session.user = {
-      id: user.rows[0].user_id,
-      username: user.rows[0].username,
+      id: user.rows[0].id,
+      handle: user.rows[0].handle,
       email: user.rows[0].email,
     };
 
@@ -149,7 +166,7 @@ app.get("/isLoggedIn", async (req, res) => {
   if (req.session.user) {
     return res
       .status(200)
-      .json({ message: "Logged in", username: req.session.user.username });
+      .json({ message: "Logged in", handle: req.session.user.handle });
   } else {
     return res.status(400).json({ message: "Not logged in" });
   }
@@ -462,62 +479,166 @@ app.listen(port, () => {
 });
 
 app.get("/problem-set", async (req, res) => {
-  const problems = await pool.query("Select p.id,p.title,p.difficulty from problems p join problem_tags pt on p.id = pt.problem_id join tags t on t.id = pt.tag_id");
-    res.json(problems);
+  const problems = await pool.query(
+    `SELECT 
+      p.id, 
+      p.title, 
+      p.difficulty, 
+      COALESCE(json_agg(t.name) FILTER (WHERE t.name IS NOT NULL), '[]') AS tags
+    FROM problems p
+    LEFT JOIN problem_tags pt ON p.id = pt.problem_id
+    LEFT JOIN tags t ON t.id = pt.tag_id
+    GROUP BY p.id, p.title, p.difficulty`
+  );
+  
+  console.log("problems", problems.rows);
+  res.json(problems.rows);
 });
+
 
 app.get("/problem/:id", async (req, res) => {
   const problemId = req.params.id;
-  const problem = await pool.query("Select title,difficulty,description from problems where id = $1", [problemId]);
-  const tags = await pool.query("Select tag.name from tags tag join problem_tags ptag on ptag.problem_id = $1 and tag.id = ptag.tag_id", [problemId]);
+  const problem = await pool.query(
+    "Select title,difficulty,description from problems where id = $1",
+    [problemId]
+  );
+  const tags = await pool.query(
+    "Select tag.name from tags tag join problem_tags ptag on ptag.problem_id = $1 and tag.id = ptag.tag_id",
+    [problemId]
+  );
   res.json({
     title: problem.rows[0].title,
     difficulty: problem.rows[0].difficulty,
     description: problem.rows[0].description,
-    tags: tags.rows.map(tag => tag.name)
-  })
+    tags: tags.rows.map((tag) => tag.name),
+  });
 });
 
 app.get("/contests", async (req, res) => {
   const contests = await pool.query("Select * from contests");
-    res.json(contests);
+  res.json(contests.rows);
 });
 
 app.get("/contest/:id", async (req, res) => {
   const contestId = req.params.id;
-  const contest = await pool.query("Select * from contests where id = $1", [contestId]);
-  const problems = await pool.query("Select psp.problem_id, p.title, p.difficulty from problem_set_problems psp join contests c on psp.problem_set_id = c.id join problems p on p.id = psp.problem_id where c.id = $1", [contestId]);
-  
-  if(contest.rows.length === 0) {
+  const contest = await pool.query("Select * from contests where id = $1", [
+    contestId,
+  ]);
+  const problems = await pool.query(
+    "Select psp.problem_id, p.title, p.difficulty from problem_set_problems psp join contests c on psp.problem_set_id = c.id join problems p on p.id = psp.problem_id where c.id = $1",
+    [contestId]
+  );
+
+  if (contest.rows.length === 0) {
     return res.status(404).json({ message: "Contest not found" });
   }
 
   res.json({
     title: contest.rows[0].title,
     start_time: contest.rows[0].start_time,
-    problems: problems.rows.map(problem => ({
+    problems: problems.rows.map((problem) => ({
       id: problem.problem_id,
       title: problem.title,
-      difficulty: problem.difficulty
-    }))
+      difficulty: problem.difficulty,
+    })),
   });
 });
 
-app.get("/profile",(req,res) => {
-  const user = req.session.user.id;
-  const user_profile = null; // fetch the data for user with id user from db
-    res.json(user_profile);
-})
+app.get("/profile", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const userId = req.session.user.id;
+
+  try {
+    const userQuery = await pool.query(
+      `SELECT 
+        u.handle, 
+        u.email, 
+        u.rating, 
+        u.created_at,
+        COALESCE(ps.solved_count, 0) AS solved_count, 
+        COALESCE(sub.submission_count, 0) AS submission_count
+      FROM users u
+      LEFT JOIN (
+        SELECT user_id, COUNT(*) AS solved_count
+        FROM submissions
+        WHERE verdict = 'Accepted'
+        GROUP BY user_id
+      ) ps ON u.id = ps.user_id
+      LEFT JOIN (
+        SELECT user_id, COUNT(*) AS submission_count
+        FROM submissions
+        GROUP BY user_id
+      ) sub ON u.id = sub.user_id
+      WHERE u.id = $1`,
+      [userId]
+    );
+
+    if (userQuery.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(userQuery.rows[0]);
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 
-app.get("/auth/google",
-    passport.authenticate("google", { scope: ["profile", "email"] })
-  );
-  
-  app.get("/auth/google/callback",
-    passport.authenticate("google", {
-      successRedirect: "http://localhost:3000/dashboard", // Redirect after success
-      failureRedirect: "http://localhost:3000/login", // Redirect after failure
-    })
-  );
-  
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", {
+    successRedirect: "http://localhost:3000/dashboard", // Redirect after success
+    failureRedirect: "http://localhost:3000/login", // Redirect after failure
+  })
+);
+
+app.get("/checkHandle", async (req, res) => {
+  const { handle } = req.query;
+
+  if (!handle) {
+    return res
+      .status(400)
+      .json({ available: false, message: "Handle is required" });
+  }
+
+  try {
+    const result = await pool.query("SELECT id FROM users WHERE handle = $1", [
+      handle,
+    ]);
+
+    const isAvailable = result.rows.length === 0;
+    return res.json({ available: isAvailable });
+  } catch (err) {
+    console.error("Error checking handle:", err);
+    return res
+      .status(500)
+      .json({ available: false, message: "Internal server error" });
+  }
+});
+
+app.post("/submission", async (req, res) => {
+  try {
+    const { user_id, problem_id, code, language } = req.body; // Expecting a JSON request
+    const insertResult = await pool.query(
+      "INSERT INTO submissions (user_id, problem_id, code, language, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id;",
+      [user_id, problem_id, code, language]
+    );
+
+    res.status(201).json({
+      message: "Submission received successfully",
+      submission_id: insertResult.rows[0].id,
+    });
+  } catch (error) {
+    console.error("Error processing submission:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
