@@ -36,6 +36,7 @@ import Problem from "./pages/Problem";
 import Contests from "./pages/Contests";
 import Contest from "./pages/Contest";
 import Profile from "./pages/Profile";
+import Submission from "./pages/Submission";
 // import Products from "./pages/Products";
 // import Cart from "./pages/Cart";
 // import OrderConfirmation from "./pages/OrderConfirmation";
@@ -53,6 +54,7 @@ function App() {
       <Route path="/contest/:id" element={<Contest />} />
       <Route path="/contests" element={<Contests />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/submission/:id" element={<Submission />} />
     </Routes>
   );
 }

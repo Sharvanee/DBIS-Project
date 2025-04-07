@@ -18,11 +18,31 @@ CREATE TABLE users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE solved_problems (
+  submission_id SERIAL PRIMARY KEY,
+  problem_id VARCHAR(10) REFERENCES problems(problem_id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  verdict VARCHAR(50) CHECK (verdict IN ('Accepted', 'Wrong Answer', 'TLE', 'Compilation Error')),
+  solved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+);
+
+
 CREATE TABLE problems (
-  id SERIAL PRIMARY KEY,
+  problem_id VARCHAR(10) UNIQUE NOT NULL,
+  problem_set_id INTEGER REFERENCES contests(contest_id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
-  description TEXT,
-  difficulty VARCHAR(10) CHECK (difficulty IN ('Easy', 'Medium', 'Hard'))
+  difficulty INTEGER,
+  time_limit INTEGER,
+  memory_limit INTEGER,
+  description TEXT NOT NULL,
+  input_format TEXT NOT NULL,
+  output_format TEXT NOT NULL,
+  interaction_format TEXT;
+  note TEXT,
+  examples TEXT,
+  editorial TEXT,
+  testset_size INTEGER,
+  testcases JSONB,
 );
 
 CREATE TABLE tags (
@@ -31,44 +51,30 @@ CREATE TABLE tags (
 );
 
 CREATE TABLE problem_tags (
-  problem_id INTEGER REFERENCES problems(id) ON DELETE CASCADE,
+  problem_id VARCHAR(10) REFERENCES problems(problem_id) ON DELETE CASCADE,
   tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
   PRIMARY KEY (problem_id, tag_id)
 );
 
-CREATE TABLE problem_sets (
-  id SERIAL PRIMARY KEY,
+
+CREATE TABLE contests (
+  contest_id SERIAL PRIMARY KEY,
+  contest_name VARCHAR(255) NOT NULL,
   title VARCHAR(255) NOT NULL,
-  description TEXT,
+  contest_type VARCHAR(5),
+  contest_year INTEGER,
+  start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  duration INTEGER,
+  division INTEGER,
   created_by INTEGER REFERENCES users(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE contests (
-  id SERIAL PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  duration INTEGER,
-  division INTEGER
-);
-
-CREATE TABLE problem_set_problems (
-  problem_set_id INTEGER REFERENCES problem_sets(id) ON DELETE CASCADE,
-  problem_id INTEGER REFERENCES problems(id) ON DELETE CASCADE,
-  PRIMARY KEY (problem_set_id, problem_id)
-);
-
-CREATE TABLE solved_problems (
-  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  problem_id INTEGER REFERENCES problems(id) ON DELETE CASCADE,
-  solved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (user_id, problem_id)
-);
 
 CREATE TABLE submissions (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  problem_id INTEGER REFERENCES problems(id) ON DELETE CASCADE,
+  problem_id VARCHAR(10) REFERENCES problems(problem_id) ON DELETE CASCADE,
   code TEXT NOT NULL,
   language VARCHAR(20) CHECK (language IN ('cpp', 'python', 'java', 'js')),
   verdict VARCHAR(50) CHECK (verdict IN ('Accepted', 'Wrong Answer', 'TLE', 'Compilation Error')),
