@@ -1,13 +1,10 @@
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS problems CASCADE;
-DROP TABLE IF EXISTS tags CASCADE;
-DROP TABLE IF EXISTS problem_tags CASCADE;
-DROP TABLE IF EXISTS problem_sets CASCADE;
-DROP TABLE IF EXISTS contests CASCADE;
-DROP TABLE IF EXISTS problem_set_problems CASCADE;
-DROP TABLE IF EXISTS solved_problems CASCADE;
 DROP TABLE IF EXISTS submissions CASCADE;
-
+DROP TABLE IF EXISTS problem_tags CASCADE;
+DROP TABLE IF EXISTS tags CASCADE;
+DROP TABLE IF EXISTS solved_problems CASCADE;
+DROP TABLE IF EXISTS problems CASCADE;
+DROP TABLE IF EXISTS contests CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
@@ -18,12 +15,16 @@ CREATE TABLE users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE solved_problems (
-  submission_id SERIAL PRIMARY KEY,
-  problem_id VARCHAR(10) REFERENCES problems(problem_id) ON DELETE CASCADE,
-  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  verdict VARCHAR(50) CHECK (verdict IN ('Accepted', 'Wrong Answer', 'TLE', 'Compilation Error')),
-  solved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+CREATE TABLE contests (
+  contest_id SERIAL PRIMARY KEY,
+  contest_name VARCHAR(255) NOT NULL,
+  contest_type VARCHAR(5),
+  contest_year INTEGER,
+  start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  duration INTEGER,
+  division INTEGER,
+  created_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -37,12 +38,20 @@ CREATE TABLE problems (
   description TEXT NOT NULL,
   input_format TEXT NOT NULL,
   output_format TEXT NOT NULL,
-  interaction_format TEXT;
+  interaction_format TEXT,
   note TEXT,
   examples TEXT,
   editorial TEXT,
   testset_size INTEGER,
-  testcases JSONB,
+  testcases JSONB
+);
+
+CREATE TABLE solved_problems (
+  submission_id SERIAL PRIMARY KEY,
+  problem_id VARCHAR(10) REFERENCES problems(problem_id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  verdict VARCHAR(50) CHECK (verdict IN ('Accepted', 'Wrong Answer', 'TLE', 'Compilation Error')),
+  solved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE tags (
@@ -55,21 +64,6 @@ CREATE TABLE problem_tags (
   tag_id INTEGER REFERENCES tags(id) ON DELETE CASCADE,
   PRIMARY KEY (problem_id, tag_id)
 );
-
-
-CREATE TABLE contests (
-  contest_id SERIAL PRIMARY KEY,
-  contest_name VARCHAR(255) NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  contest_type VARCHAR(5),
-  contest_year INTEGER,
-  start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  duration INTEGER,
-  division INTEGER,
-  created_by INTEGER REFERENCES users(id),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 
 CREATE TABLE submissions (
   id SERIAL PRIMARY KEY,
