@@ -45,7 +45,7 @@ for split in ["train", "test"]:
             continue
 
         try:
-            cleaned_problem_id = row["id"].replace("/", "")  # or .replace("/", "-") if preferred
+            cleaned_problem_id = row["id"].replace("/", "")
             row["id"] = cleaned_problem_id
             cur.execute(problem_query, (
                 row["id"], row["contest_id"], row["title"], row["rating"], row["time_limit"],
