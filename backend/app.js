@@ -108,6 +108,12 @@ app.post("/signup", async (req, res) => {
     );
     
     const { id: userId, created_at } = insertResult.rows[0];
+
+    req.session.user = {
+      id: userId,
+      handle,
+      email,
+    };
     
     res.status(200).json({
       id: userId,
