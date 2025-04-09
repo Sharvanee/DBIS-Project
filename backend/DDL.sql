@@ -30,14 +30,14 @@ CREATE TABLE contests (
 
 CREATE TABLE problems (
   problem_id VARCHAR(10) UNIQUE NOT NULL,
-  problem_set_id INTEGER REFERENCES contests(contest_id) ON DELETE CASCADE,
+  contest_id INTEGER REFERENCES contests(contest_id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   difficulty INTEGER,
   time_limit INTEGER,
   memory_limit INTEGER,
   description TEXT NOT NULL,
-  input_format TEXT NOT NULL,
-  output_format TEXT NOT NULL,
+  input_format TEXT,
+  output_format TEXT,
   interaction_format TEXT,
   note TEXT,
   examples TEXT,
