@@ -198,14 +198,14 @@ app.listen(port, () => {
 app.get("/problem-set", async (req, res) => {
   const problems = await pool.query(
     `SELECT 
-      p.id, 
+      p.problem_id, 
       p.title, 
       p.difficulty, 
       COALESCE(json_agg(t.name) FILTER (WHERE t.name IS NOT NULL), '[]') AS tags
-    FROM problems p
-    LEFT JOIN problem_tags pt ON p.id = pt.problem_id
+    FROM problems AS p
+    LEFT JOIN problem_tags pt ON p.problem_id = pt.problem_id
     LEFT JOIN tags t ON t.id = pt.tag_id
-    GROUP BY p.id, p.title, p.difficulty`
+    GROUP BY p.problem_id, p.title, p.difficulty`
   );
   
   console.log("problems", problems.rows);
@@ -358,16 +358,29 @@ app.get("/checkHandle", async (req, res) => {
   }
 });
 
-app.post("/submission", async (req, res) => {
+app.post("/submit", async (req, res) => {
   try {
-    const { user_id, problem_id, code, language } = req.body; // Expecting a JSON request
+    const user_id = req.session && req.session.user ? req.session.user.id : null;
+    const { problem_id, code, language } = req.body;
+
+    if (!user_id) {
+      return res.status(401).json({ error: "Unauthorized: Please login." });
+    }
+
+    if (!problem_id || !code || !language) {
+      return res.status(400).json({ error: "Missing required fields." });
+    }
+
     const insertResult = await pool.query(
-      "INSERT INTO submissions (user_id, problem_id, code, language, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id;",
+      `INSERT INTO submissions (
+        user_id, problem_id, code, language, created_at, verdict, runtime, memory
+      ) VALUES ($1, $2, $3, $4, NOW(), NULL, NULL, NULL)
+      RETURNING id;`,
       [user_id, problem_id, code, language]
     );
 
     res.status(201).json({
-      message: "Submission received successfully",
+      message: "Submission received successfully.",
       submission_id: insertResult.rows[0].id,
     });
   } catch (error) {
