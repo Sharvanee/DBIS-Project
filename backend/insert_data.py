@@ -45,6 +45,8 @@ for split in ["train", "test"]:
             continue
 
         try:
+            cleaned_problem_id = row["id"].replace("/", "")  # or .replace("/", "-") if preferred
+            row["id"] = cleaned_problem_id
             cur.execute(problem_query, (
                 row["id"], row["contest_id"], row["title"], row["rating"], row["time_limit"],
                 row["memory_limit"], row["description"], row["input_format"], row["output_format"],
@@ -71,6 +73,8 @@ ON CONFLICT DO NOTHING;
 for split in ["train", "test"]:
     for row in ds[split]:
         for tag in row["tags"]:
+            cleaned_problem_id = row["id"].replace("/", "")
+            row["id"] = cleaned_problem_id
             cur.execute(tag_query, (tag,))
             cur.execute(problem_tag_query, (row["id"], tag, row["id"]))
 

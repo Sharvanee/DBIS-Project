@@ -56,6 +56,7 @@ const Profile = () => {
         <p><strong>Problems Solved:</strong> {user.solved_count}</p>
         <p><strong>Submissions:</strong> {user.submission_count}</p>
         <p><strong>Joined:</strong> {new Date(user.created_at).toLocaleString()}</p>
+        <p><a href="/add-contest">Add Contest</a></p>
       </div>
     </div>
   );

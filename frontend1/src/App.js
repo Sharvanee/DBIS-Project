@@ -37,6 +37,7 @@ import Contests from "./pages/Contests";
 import Contest from "./pages/Contest";
 import Profile from "./pages/Profile";
 import Submission from "./pages/Submission";
+import AddContest from "./pages/AddContest";
 // import Products from "./pages/Products";
 // import Cart from "./pages/Cart";
 // import OrderConfirmation from "./pages/OrderConfirmation";
@@ -55,6 +56,7 @@ function App() {
       <Route path="/contests" element={<Contests />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/submission/:id" element={<Submission />} />
+      <Route path="/add-contest" element={<AddContest />} />
     </Routes>
   );
 }

@@ -215,11 +215,11 @@
 
 
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import {useParams, useNavigate } from "react-router";
 import { apiUrl } from "../config/config";
 
 const Problem = () => {
-  const { id } = useParams();
+  const { id } = useParams(); // problem ID from URL
   const navigate = useNavigate();
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -244,13 +244,23 @@ const Problem = () => {
         const res = await fetch(`${apiUrl}/problem/${id}`, {
           credentials: "include",
         });
-
+        
         if (!res.ok) {
-          throw new Error("Problem not found");
+          const text = await res.text();
+          console.error("Server error response:", text);
+        
+          if (text.includes("not logged in") || res.status === 401) {
+            navigate("/login");
+          } else {
+            navigate("/not-found");
+          }
+        
+          return;
         }
-
+        
         const data = await res.json();
         setProblem(data);
+        
       } catch (err) {
         console.error("Error fetching problem:", err);
         navigate("/not-found");
@@ -339,42 +349,47 @@ const Problem = () => {
           )}
 
           <br /><br />
+          <button
+            onClick={async () => {
+              try {
+                const res = await fetch(`${apiUrl}/submit`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  credentials: "include",
+                  body: JSON.stringify({
+                    problem_id: id,
+                    language,
+                    code,
+                  }),
+                });
 
-          <button onClick={async () => {
-            try {
-              const res = await fetch(`${apiUrl}/submit`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                credentials: "include",
-                body: JSON.stringify({
-                  problemId: id,
-                  language,
-                  code,
-                }),
-              });
-
-              const result = await res.json();
-              if (res.ok) {
-                alert("Submission successful!");
-                setShowSubmit(false);
-                setCode("");
-                setFile(null);
-              } else {
-                alert("Submission failed: " + result.error);
+                const result = await res.json();
+                if (res.ok) {
+                  alert("Submission successful!");
+                  setShowSubmit(false);
+                  setCode("");
+                  setFile(null);
+                } else {
+                  alert("Submission failed: " + result.error);
+                }
+              } catch (err) {
+                console.error("Submission error:", err);
+                alert("Something went wrong!");
               }
-            } catch (err) {
-              console.error("Submission error:", err);
-              alert("Something went wrong!");
-            }
-          }}>Submit</button>
+            }}
+          >
+            Submit
+          </button>
 
-          <button onClick={() => setShowSubmit(false)}>Cancel</button>
+          <button onClick={() => setShowSubmit(false)} style={{ marginLeft: "10px" }}>
+            Cancel
+          </button>
         </div>
       )}
 
-      <div className="submission-table">
+      <div className="submission-table" style={{ marginTop: "30px" }}>
         <h2>Submissions</h2>
         <table>
           <thead>
@@ -387,15 +402,23 @@ const Problem = () => {
             </tr>
           </thead>
           <tbody>
-            {problem.submissions.map((submission) => (
-              <tr key={submission.id}>
-                <td><a href={`/submission/${submission.id}`}>{submission.id}</a></td>
-                <td>{submission.verdict}</td>
-                <td>{submission.runtime}</td>
-                <td>{submission.memory}</td>
-                <td>{submission.language}</td>
+            {problem.submissions && problem.submissions.length > 0 ? (
+              problem.submissions.map((submission) => (
+                <tr key={submission.id}>
+                  <td>
+                    <a href={`/submission/${submission.id}`}>{submission.id}</a>
+                  </td>
+                  <td>{submission.verdict}</td>
+                  <td>{submission.runtime}</td>
+                  <td>{submission.memory}</td>
+                  <td>{submission.language}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5">No submissions yet.</td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

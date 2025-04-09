@@ -67,7 +67,7 @@ const ContestList = () => {
             {contests.map((contest, index) => (
               <tr key={index}>
                 <td>
-                  <a href={`/contest/${contest.id}`}>{contest.title}</a>
+                  <a href={`/contest/${contest.contest_id}`}>{contest.contest_name}</a>
                 </td>
                 <td>{new Date(contest.start_time).toLocaleString()}</td>
                 <td>{contest.duration} mins</td>

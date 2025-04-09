@@ -33,7 +33,7 @@ const ProblemList = () => {
           credentials: "include",
         });
         const json = await res.json();
-        
+
         if (Array.isArray(json)) {
           setProblems(json);
         } else {
@@ -46,7 +46,7 @@ const ProblemList = () => {
         setLoading(false);
       }
     };
-    
+
 
     fetchProblems();
   }, []);
@@ -72,10 +72,10 @@ const ProblemList = () => {
           <tbody>
             {problems.map((problem, index) => (
               <tr key={index}>
+                <td>{problem.problem_id}</td>
                 <td>
-                  <a href={`/problem/${problem.id}`}>{problem.id}</a>
+                <a href={`/problem/${problem.problem_id}`}>{problem.title}</a>
                 </td>
-                <td>{problem.title}</td>
                 <td>{problem.difficulty}</td>
                 <td>
                   {problem.tags.map((tag, i) => (

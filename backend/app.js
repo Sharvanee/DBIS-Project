@@ -215,25 +215,40 @@ app.get("/problem-set", async (req, res) => {
 
 app.get("/problem/:id", async (req, res) => {
   const problemId = req.params.id;
-  const problem = await pool.query(
-    "Select title,difficulty,description from problems where id = $1",
-    [problemId]
-  );
-  const tags = await pool.query(
-    "Select tag.name from tags tag join problem_tags ptag on ptag.problem_id = $1 and tag.id = ptag.tag_id",
-    [problemId]
-  );
-  const submissions = await pool.query(
-    "Select * from submissions where problem_id = $1 and user_id = $2",[problemId, req.session.user.id]
-  )
-  res.json({
-    title: problem.rows[0].title,
-    difficulty: problem.rows[0].difficulty,
-    description: problem.rows[0].description,
-    tags: tags.rows.map((tag) => tag.name),
-    submissions: submissions.rows
-  });
+
+  try {
+    const problem = await pool.query(
+      "SELECT title, difficulty, description FROM problems WHERE problem_id = $1",
+      [problemId]
+    );
+
+    if (problem.rows.length === 0) {
+      return res.status(404).json({ error: "Problem not found" });
+    }
+
+    const tags = await pool.query(
+      "SELECT tag.name FROM tags tag JOIN problem_tags ptag ON ptag.problem_id = $1 AND tag.id = ptag.tag_id",
+      [problemId]
+    );
+
+    const submissions = await pool.query(
+      "SELECT * FROM submissions WHERE problem_id = $1 AND user_id = $2",
+      [problemId, req.session.user.id]
+    );
+
+    res.json({
+      title: problem.rows[0].title,
+      difficulty: problem.rows[0].difficulty,
+      description: problem.rows[0].description,
+      tags: tags.rows.map((tag) => tag.name),
+      submissions: submissions.rows,
+    });
+  } catch (err) {
+    console.error("Error fetching problem:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
+
 
 app.get("/contests", async (req, res) => {
   const contests = await pool.query("Select * from contests");
@@ -242,11 +257,11 @@ app.get("/contests", async (req, res) => {
 
 app.get("/contest/:id", async (req, res) => {
   const contestId = req.params.id;
-  const contest = await pool.query("Select * from contests where id = $1", [
+  const contest = await pool.query("Select * from contests where contest_id = $1", [
     contestId,
   ]);
   const problems = await pool.query(
-    "Select psp.problem_id, p.title, p.difficulty from problem_set_problems psp join contests c on psp.problem_set_id = c.id join problems p on p.id = psp.problem_id where c.id = $1",
+    "Select * from problems where contest_id = $1",
     [contestId]
   );
 
@@ -264,6 +279,139 @@ app.get("/contest/:id", async (req, res) => {
     })),
   });
 });
+
+app.post("/add-contest", async (req, res) => {
+  try {
+    const { title, start_time, duration_minutes, problems } = req.body;
+
+    if (
+      !title ||
+      !start_time ||
+      !duration_minutes ||
+      !Array.isArray(problems) ||
+      problems.length === 0
+    ) {
+      return res.status(400).json({
+        error:
+          "All fields are required and problems must be a non-empty array.",
+      });
+    }
+
+    // Insert contest
+    const contestInsertRes = await pool.query(
+      `
+        INSERT INTO contests (contest_name, start_time, duration)
+        VALUES ($1, $2, $3)
+        RETURNING contest_id
+      `,
+      [title, start_time, duration_minutes]
+    );
+
+    const contestId = contestInsertRes.rows[0].contest_id;
+
+    for (let i = 0; i < problems.length; i++) {
+      const {
+        problem_id,
+        title,
+        description,
+        tags,
+        difficulty,
+        time_limit,
+        memory_limit,
+        input_format,
+        output_format,
+        interaction_format,
+        note,
+        examples,
+        editorial,
+        testset_size,
+        testcases,
+      } = problems[i];
+      console.log(problem_id);
+      const problemInsertRes = await pool.query(
+        `
+          INSERT INTO problems (
+            problem_id, contest_id, title, difficulty, time_limit,
+            memory_limit, description, input_format, output_format,
+            interaction_format, note, examples, editorial, testset_size, testcases
+          )
+          VALUES (
+            $1, $2, $3, $4, $5,
+            $6, $7, $8, $9,
+            $10, $11, $12, $13, $14, $15
+          )
+          RETURNING problem_id
+        `,
+        [
+          problem_id,
+          contestId,
+          title || `Problem ${String.fromCharCode(65 + i)}`,
+          difficulty || null,
+          time_limit || null,
+          memory_limit || null,
+          description || "",
+          input_format || "",
+          output_format || "",
+          interaction_format || "",
+          note || "",
+          examples || "",
+          editorial || "",
+          testset_size || null,
+          testcases ? JSON.stringify(testcases) : null,
+        ]
+      );
+
+      const insertedProblemId = problemInsertRes.rows[0].problem_id;
+
+      // Handle tags
+      if (tags) {
+        const tagList = tags.split(",").map((t) => t.trim().toLowerCase());
+
+        for (const tagName of tagList) {
+          const tagRes = await pool.query(
+            `
+              INSERT INTO tags (name)
+              VALUES ($1)
+              ON CONFLICT (name) DO NOTHING
+              RETURNING id
+            `,
+            [tagName]
+          );
+
+          let tagId;
+          if (tagRes.rows.length > 0) {
+            tagId = tagRes.rows[0].id;
+          } else {
+            const existing = await pool.query(
+              `SELECT id FROM tags WHERE name = $1`,
+              [tagName]
+            );
+            tagId = existing.rows[0].id;
+          }
+
+          await pool.query(
+            `
+              INSERT INTO problem_tags (problem_id, tag_id)
+              VALUES ($1, $2)
+              ON CONFLICT DO NOTHING
+            `,
+            [insertedProblemId, tagId]
+          );
+        }
+      }
+    }
+
+    res.status(201).json({
+      success: "Contest created successfully!",
+      contest_id: contestId,
+    });
+  } catch (err) {
+    console.error("Error creating contest:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
 
 app.get("/profile", async (req, res) => {
   if (!req.session.user) {
@@ -367,8 +515,14 @@ app.post("/submit", async (req, res) => {
       return res.status(401).json({ error: "Unauthorized: Please login." });
     }
 
-    if (!problem_id || !code || !language) {
-      return res.status(400).json({ error: "Missing required fields." });
+    if (!problem_id) {
+      return res.status(400).json({ error: "Missing required fields.1" });
+    }
+    if (!code) {
+      return res.status(400).json({ error: "Missing required fields.2" });
+    }
+    if (!language) {
+      return res.status(400).json({ error: "Missing required fields.3" });
     }
 
     const insertResult = await pool.query(

@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router";
+import { apiUrl } from "../config/config";
 
 const Navbar = () => {
   const navigate = useNavigate(); // Use this to redirect users
@@ -9,7 +10,20 @@ const Navbar = () => {
   // On successful logout, redirect the user to the login page.
   const handleLogout = async (e) => {
     e.preventDefault();
-    // Implement logout logic here
+    try {
+      const response = await fetch(`${apiUrl}/logout`, {
+        method: "POST",
+        credentials: "include", // Ensure session is cleared
+      });
+
+      if (response.ok) {
+        navigate("/login"); // Redirect to login page after logout
+      } else {
+        console.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
   };
 
   // TODO: Use JSX to create a navigation bar with buttons for:
@@ -18,8 +32,8 @@ const Navbar = () => {
   // - Cart
   // - Logout
   return (
-    <nav>
-      {/* Implement navigation buttons here */}
+    <nav className="navbar">
+            <button onClick={handleLogout}>Logout</button>
     </nav>
   );
 };
