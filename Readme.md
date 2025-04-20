@@ -28,7 +28,7 @@ Before running the application, ensure the backend is properly connected to the 
     - Enter the password as "test"
 -  \i '/path/to/backend/DDL.sql'
 
-In a new terminal, inside the backend directory, run "python3 insert.py"
+In a new terminal, inside the backend directory, run "python3 insert_data.py"
 
 ---
 
