@@ -1,5 +1,5 @@
 // import React, { useState, useEffect } from "react";
-// import { useNavigate } from "react-router";
+// import { useNavigate } from "react-router-dom";
 // import { apiUrl } from "../config/config";
 
 // const Signup = () => {
@@ -192,7 +192,7 @@
 // export default Signup;
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { apiUrl } from "../config/config";
 
 const Signup = () => {

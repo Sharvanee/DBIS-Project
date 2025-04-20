@@ -1,5 +1,5 @@
 // import React, { useEffect, useState } from "react";
-// import { useNavigate } from "react-router";
+// import { useNavigate } from "react-router-dom";
 // import { apiUrl } from "../config/config";
 
 // const ProblemList = () => {
@@ -96,7 +96,7 @@
 // export default ProblemList;
 
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { apiUrl } from "../config/config";
 import "./ProblemList.css"; // Import the corresponding CSS file
 import Navbar from "./Navbar";

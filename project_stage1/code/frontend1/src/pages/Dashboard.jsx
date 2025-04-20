@@ -1,5 +1,5 @@
 // import React, { useState, useEffect } from "react";
-// import { useNavigate } from "react-router";
+// import { useNavigate } from "react-router-dom";
 // import Navbar from "./Navbar"; // Navbar will be updated below
 // import { apiUrl } from "../config/config";
 
@@ -42,7 +42,7 @@
 // export default Dashboard;
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
 import { apiUrl } from "../config/config";
 import "./Dashboard.css"; // Make sure to create/import this file

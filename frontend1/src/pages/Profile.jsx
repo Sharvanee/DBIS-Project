@@ -1,5 +1,5 @@
 // import React, { useEffect, useState } from "react";
-// import { useNavigate } from "react-router";
+// import { useNavigate } from "react-router-dom";
 // import { apiUrl } from "../config/config";
 
 // const Profile = () => {
@@ -65,7 +65,7 @@
 // export default Profile;
 
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { apiUrl } from "../config/config";
 import "./Profile.css"; // Assuming you have a CSS file for styling
 import Navbar from "./Navbar";

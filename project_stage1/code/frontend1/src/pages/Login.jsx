@@ -1,5 +1,5 @@
 // import React, { useState, useEffect } from "react";
-// import { useNavigate } from "react-router";
+// import { useNavigate } from "react-router-dom";
 // import { apiUrl } from "../config/config";
 
 // const Login = () => {
@@ -122,7 +122,7 @@
 // export default Login;
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { apiUrl } from "../config/config";
 import "./Login.css"; // <-- Make sure to import your CSS file
 

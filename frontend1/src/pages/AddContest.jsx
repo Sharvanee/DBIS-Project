@@ -1,5 +1,5 @@
 // import React, { useState } from "react";
-// import { useNavigate } from "react-router";
+// import { useNavigate } from "react-router-dom";
 // import { apiUrl } from "../config/config";
 // import Navbar from "../components/Navbar";
 
@@ -263,7 +263,7 @@
 // export default AddContest;
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { apiUrl } from "../config/config";
 import Navbar from "../components/Navbar";
 import styles from "./AddContest.css";

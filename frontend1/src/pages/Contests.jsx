@@ -1,5 +1,5 @@
 // import React, { useEffect, useState } from "react";
-// import { useNavigate } from "react-router";
+// import { useNavigate } from "react-router-dom";
 // import { apiUrl } from "../config/config";
 
 // const ContestList = () => {
@@ -84,7 +84,7 @@
 // export default ContestList;
 
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { apiUrl } from "../config/config";
 import "./ContestList.css"; // Add this line to import the CSS
 import Navbar from "./Navbar";
