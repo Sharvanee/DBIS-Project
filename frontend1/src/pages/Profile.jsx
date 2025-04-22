@@ -125,10 +125,13 @@ const Profile = () => {
         </div>
         <div className="profile-right">
           <h2>{user.handle}</h2>
+          <p><strong>Name:</strong> {user.display_name || "No Display Name Set"}</p>
           <p><strong>Email:</strong> {user.email}</p>
           <p><strong>Rating:</strong> {user.rating}</p>
           <p><strong>Problems Solved:</strong> {user.solved_count}</p>
           <p><strong>Submissions:</strong> {user.submission_count}</p>
+          <p><strong>City:</strong> {user.city || "N/A"}</p>
+          <p><strong>College:</strong> {user.college || "N/A"}</p>
           <p><strong>Joined:</strong> {new Date(user.created_at).toLocaleString()}</p>
 
           <div className="profile-buttons">

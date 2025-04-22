@@ -1,44 +1,89 @@
 .contest-list-container {
-    max-width: 900px;
-    margin: 40px auto;
-    padding: 20px;
-    font-family: Arial, sans-serif;
-  }
-  
-  .contest-list-container h1 {
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 28px;
-  }
-  
-  .contest-table {
-    width: 100%;
-    border-collapse: collapse;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  .contest-table thead {
-    background-color: #f2f2f2;
-  }
-  
-  .contest-table th,
-  .contest-table td {
-    padding: 12px 16px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-  }
-  
-  .contest-table tr:hover {
-    background-color: #f9f9f9;
-  }
-  
-  .contest-link {
-    color: #0077cc;
-    text-decoration: none;
-    font-weight: bold;
-  }
-  
-  .contest-link:hover {
-    text-decoration: underline;
-  }
-  
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.contest-list-container h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 28px;
+}
+
+.contest-table {
+  width: 100%;
+  border-collapse: collapse;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.contest-table thead {
+  background-color: #f2f2f2;
+}
+
+.contest-table th,
+.contest-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.contest-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+.contest-link {
+  color: #0077cc;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.contest-link:hover {
+  text-decoration: underline;
+}
+
+/* Pagination styles */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+  margin-bottom: 40px; /* ensures spacing from bottom */
+}
+
+.pagination-controls button {
+  padding: 6px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: 4px;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  background-color: #e6f0ff;
+}
+
+.pagination-controls button.active-page {
+  background-color: #0077cc;
+  color: #fff;
+  border-color: #0077cc;
+  font-weight: bold;
+}
+
+.pagination-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+.ellipsis {
+  display: inline-block;
+  padding: 6px 10px;
+  font-size: 14px;
+  color: #888;
+  user-select: none;
+}

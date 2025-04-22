@@ -1,30 +1,3 @@
-// import logo from './logo.svg';
-// import './App.css';
-
-// function App() {
-//   return (
-//     <div className="App">
-//       <header className="App-header">
-//         <img src={logo} className="App-logo" alt="logo" />
-//         <p>
-//           Edit <code>src/App.js</code> and save to reload.
-//         </p>
-//         <a
-//           className="App-link"
-//           href="https://reactjs.org"
-//           target="_blank"
-//           rel="noopener noreferrer"
-//         >
-//           Learn React
-//         </a>
-//       </header>
-//     </div>
-//   );
-// }
-
-// export default App;
-
-
 import { Routes, Route } from "react-router-dom";
 import Signup from "./pages/Signup";
 import Home from "./pages/Home";
@@ -38,9 +11,7 @@ import Contest from "./pages/Contest";
 import Profile from "./pages/Profile";
 import Submission from "./pages/Submission";
 import AddContest from "./pages/AddContest";
-// import Products from "./pages/Products";
-// import Cart from "./pages/Cart";
-// import OrderConfirmation from "./pages/OrderConfirmation";
+import EditProfile from "./pages/EditProfile";
 
 function App() {
   return (
@@ -57,6 +28,7 @@ function App() {
       <Route path="/profile" element={<Profile />} />
       <Route path="/submission/:id" element={<Submission />} />
       <Route path="/add-contest" element={<AddContest />} />
+      <Route path="edit-profile" element={<EditProfile />} />
     </Routes>
   );
 }

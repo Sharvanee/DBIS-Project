@@ -52,29 +52,14 @@ app.use(passport.session());
 const authRoutes = require("./routes/auth");
 app.use(authRoutes);
 
-/////////////////////////////////////////////////////////////
-// Authentication APIs
-// Signup, Login, IsLoggedIn and Logout
-
-// TODO: Implement authentication middleware
-// Redirect unauthenticated users to the login page with respective status code
-// function isAuthenticated(req, res, next) {
-//   if (!req.session.user) {
-//     return res.status(400).json({ message: "Unauthorized" });
-//   }
-//   next();
-// }
 
 function isAuthenticated(req, res, next) {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Unauthorized" });
+  if (!req.session.user) {
+    return res.status(400).json({ message: "Unauthorized" });
   }
   next();
 }
 
-// TODO: Implement user signup logic
-// return JSON object with the following fields: {username, email, password}
-// use correct status codes and messages mentioned in the lab document
 app.post("/signup", async (req, res) => {
   try {
     const { handle, email, password } = req.body;
@@ -129,9 +114,7 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-// TODO: Implement user signup logic
-// return JSON object with the following fields: {email, password}
-// use correct status codes and messages mentioned in the lab document
+
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -201,7 +184,7 @@ app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
 
-app.get("/problem-set", async (req, res) => {
+app.get("/problem-set", isAuthenticated, async (req, res) => {
   const problems = await pool.query(
     `SELECT 
       p.problem_id, 
@@ -219,7 +202,7 @@ app.get("/problem-set", async (req, res) => {
 });
 
 
-app.get("/problem/:id", async (req, res) => {
+app.get("/problem/:id", isAuthenticated, async (req, res) => {
   const problemId = req.params.id;
 
   try {
@@ -256,12 +239,12 @@ app.get("/problem/:id", async (req, res) => {
 });
 
 
-app.get("/contests", async (req, res) => {
+app.get("/contests", isAuthenticated, async (req, res) => {
   const contests = await pool.query("Select * from contests");
   res.json(contests.rows);
 });
 
-app.get("/contest/:id", async (req, res) => {
+app.get("/contest/:id", isAuthenticated, async (req, res) => {
   const contestId = req.params.id;
   const contest = await pool.query("Select * from contests where contest_id = $1", [
     contestId,
@@ -286,7 +269,7 @@ app.get("/contest/:id", async (req, res) => {
   });
 });
 
-app.post("/add-contest", async (req, res) => {
+app.post("/add-contest", isAuthenticated, async (req, res) => {
   try {
     const { title, start_time, duration_minutes, problems } = req.body;
 
@@ -419,7 +402,7 @@ app.post("/add-contest", async (req, res) => {
 
 
 
-app.get("/profile", async (req, res) => {
+app.get("/profile", isAuthenticated, async (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -462,7 +445,7 @@ app.get("/profile", async (req, res) => {
   }
 });
 
-app.get("/submission/:id", async (req, res) => {
+app.get("/submission/:id", isAuthenticated, async (req, res) => {
   const submissionId = req.params.id;
   const submission = await pool.query(
     "Select * from submissions where id = $1",
@@ -512,7 +495,7 @@ app.get("/checkHandle", async (req, res) => {
   }
 });
 
-app.post("/submit", async (req, res) => {
+app.post("/submit", isAuthenticated, async (req, res) => {
   try {
     const user_id = req.session && req.session.user ? req.session.user.id : null;
     const { problem_id, code, language } = req.body;
@@ -548,3 +531,38 @@ app.post("/submit", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+
+app.put("/update-profile", isAuthenticated, async (req, res) => {
+  const { city, college, profile_picture } = req.body;  // You may also include other profile data here
+  
+  // Validate the input data
+  if (!city && !college && !profile_picture) {
+    return res.status(400).json({ message: "No changes made." });
+  }
+
+  try {
+    // Update the profile info for the logged-in user
+    const result = await pool.query(
+      `UPDATE users 
+       SET city = COALESCE($1, city), college = COALESCE($2, college), profile_picture = COALESCE($3, profile_picture) 
+       WHERE id = $4
+       RETURNING id, handle, email, city, college, profile_picture`,
+      [city || null, college || null, profile_picture || null, req.session.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Send back the updated profile
+    res.status(200).json({
+      message: "Profile updated successfully",
+      profile: result.rows[0]
+    });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ message: "Error updating profile." });
+  }
+});
+
