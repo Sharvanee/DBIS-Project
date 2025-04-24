@@ -111,17 +111,54 @@ const Profile = () => {
   if (loading) return <p>Loading profile...</p>;
   if (!user) return <p>Profile not found.</p>;
 
+  const getInitials = (name) => {
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+  
+
   return (
     <div>
       <Navbar />
       <div className="profile-container">
         <div className="profile-card">
           <div className="profile-left">
-            <img
-              src={user.profile_pic || "/default-avatar.png"}
-              alt="Profile"
-              className="profile-pic"
-            />
+          {user.profile_pic ? (
+  <img
+    src={user.profile_pic}
+    alt="Profile"
+    className="profile-pic"
+    onError={(e) => {
+      e.target.onerror = null;
+      e.target.style.display = "none";
+      e.target.nextSibling.style.display = "flex";
+    }}
+  />
+) : null}
+
+<div
+  className="initials-avatar"
+  style={{
+    display: user.profile_pic ? "none" : "flex",
+    backgroundColor: "#ccc",
+    borderRadius: "50%",
+    width: "100px",
+    height: "100px",
+    justifyContent: "center",
+    alignItems: "center",
+    fontSize: "32px",
+    color: "#fff",
+    fontWeight: "bold",
+  }}
+>
+  {getInitials(user.display_name || user.handle)}
+</div>
+
+
           </div>
           <div className="profile-right">
             <h2>{user.handle}</h2>
