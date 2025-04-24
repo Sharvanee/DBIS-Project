@@ -12,6 +12,27 @@ const { Pool } = require("pg");
 const app = express();
 const port = 4000;
 
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+// Setup for file uploads (profile pictures)
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, "uploads");
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath);
+    }
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${file.fieldname}${ext}`);
+  },
+});
+const upload = multer({ storage });
+
+
 // PostgreSQL connection
 // NOTE: use YOUR postgres username and password here
 const pool = new Pool({
@@ -51,6 +72,7 @@ app.use(passport.session());
 // Import and use auth routes
 const authRoutes = require("./routes/auth");
 app.use(authRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 function isAuthenticated(req, res, next) {
@@ -119,7 +141,7 @@ app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-    console.log("user", user.rows);
+    // console.log("user", user.rows);
     if (user.rows.length === 0) {
       return res
         .status(400)
@@ -197,7 +219,7 @@ app.get("/problem-set", isAuthenticated, async (req, res) => {
     GROUP BY p.problem_id, p.title, p.difficulty`
   );
   
-  console.log("problems", problems.rows);
+  // console.log("problems", problems.rows);
   res.json(problems.rows);
 });
 
@@ -316,7 +338,7 @@ app.post("/add-contest", isAuthenticated, async (req, res) => {
         testset_size,
         testcases,
       } = problems[i];
-      console.log(problem_id);
+      // console.log(problem_id);
       const problemInsertRes = await pool.query(
         `
           INSERT INTO problems (
@@ -403,10 +425,6 @@ app.post("/add-contest", isAuthenticated, async (req, res) => {
 
 
 app.get("/profile", isAuthenticated, async (req, res) => {
-  if (!req.session.user) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
   const userId = req.session.user.id;
 
   try {
@@ -414,6 +432,12 @@ app.get("/profile", isAuthenticated, async (req, res) => {
       `SELECT 
         u.handle, 
         u.email, 
+        u.display_name,
+        u.country,
+        u.state,
+        u.city,
+        u.college,
+        u.profile_pic,
         u.rating, 
         u.created_at,
         COALESCE(ps.solved_count, 0) AS solved_count, 
@@ -444,6 +468,7 @@ app.get("/profile", isAuthenticated, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 app.get("/submission/:id", isAuthenticated, async (req, res) => {
   const submissionId = req.params.id;
@@ -533,36 +558,33 @@ app.post("/submit", isAuthenticated, async (req, res) => {
 });
 
 
-app.put("/update-profile", isAuthenticated, async (req, res) => {
-  const { city, college, profile_picture } = req.body;  // You may also include other profile data here
-  
-  // Validate the input data
-  if (!city && !college && !profile_picture) {
-    return res.status(400).json({ message: "No changes made." });
-  }
+app.put("/update-profile", isAuthenticated, upload.single("profile_pic"), async (req, res) => {
+  const userId = req.session.user.id;
+  const { country, state, city, college, display_name } = req.body;
+  const profile_pic = req.file ? `/uploads/${req.file.filename}` : null;
 
   try {
-    // Update the profile info for the logged-in user
-    const result = await pool.query(
+    const updateFields = [
+      country,
+      state,
+      city,
+      college,
+      display_name,
+      profile_pic,
+      userId,
+    ];
+
+    await pool.query(
       `UPDATE users 
-       SET city = COALESCE($1, city), college = COALESCE($2, college), profile_picture = COALESCE($3, profile_picture) 
-       WHERE id = $4
-       RETURNING id, handle, email, city, college, profile_picture`,
-      [city || null, college || null, profile_picture || null, req.session.user.id]
+       SET country = $1, state = $2, city = $3, college = $4, 
+           display_name = $5, profile_pic = COALESCE($6, profile_pic) 
+       WHERE id = $7`,
+      updateFields
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "User not found." });
-    }
-
-    // Send back the updated profile
-    res.status(200).json({
-      message: "Profile updated successfully",
-      profile: result.rows[0]
-    });
-  } catch (error) {
-    console.error("Error updating profile:", error);
-    res.status(500).json({ message: "Error updating profile." });
+    // res.status(200).json({ message: "Profile updated successfully" });
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    res.status(500).json({ message: "Failed to update profile" });
   }
 });
-

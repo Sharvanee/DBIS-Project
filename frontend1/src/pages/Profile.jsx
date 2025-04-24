@@ -114,33 +114,39 @@ const Profile = () => {
   return (
     <div>
       <Navbar />
-    <div className="profile-container">
-      <div className="profile-card">
-        <div className="profile-left">
-          <img
-            src={user.profile_pic || "/default-avatar.png"}
-            alt="Profile"
-            className="profile-pic"
-          />
-        </div>
-        <div className="profile-right">
-          <h2>{user.handle}</h2>
-          <p><strong>Name:</strong> {user.display_name || "No Display Name Set"}</p>
-          <p><strong>Email:</strong> {user.email}</p>
-          <p><strong>Rating:</strong> {user.rating}</p>
-          <p><strong>Problems Solved:</strong> {user.solved_count}</p>
-          <p><strong>Submissions:</strong> {user.submission_count}</p>
-          <p><strong>City:</strong> {user.city || "N/A"}</p>
-          <p><strong>College:</strong> {user.college || "N/A"}</p>
-          <p><strong>Joined:</strong> {new Date(user.created_at).toLocaleString()}</p>
+      <div className="profile-container">
+        <div className="profile-card">
+          <div className="profile-left">
+            <img
+              src={user.profile_pic || "/default-avatar.png"}
+              alt="Profile"
+              className="profile-pic"
+            />
+          </div>
+          <div className="profile-right">
+            <h2>{user.handle}</h2>
+            <p><strong>Name:</strong> {user.display_name || ""}</p>
+            <p><strong>Email:</strong> {user.email}</p>
+            <p><strong>Rating:</strong> {user.rating}</p>
+            <p><strong>Problems Solved:</strong> {user.solved_count}</p>
+            <p><strong>Submissions:</strong> {user.submission_count}</p>
+            <p>
+              <strong>Location:</strong>{" "}
+              {user.city || user.state || user.country
+                ? [user.city, user.state, user.country].filter(Boolean).join(", ")
+                : "N/A"}
+            </p>
 
-          <div className="profile-buttons">
-            <a href="/add-contest" className="btn">Add Contest</a>
-            <a href="/edit-profile" className="btn secondary">Edit Profile</a>
+            <p><strong>Institution:</strong> {user.college || "N/A"}</p>
+            <p><strong>Joined:</strong> {new Date(user.created_at).toLocaleString()}</p>
+
+            <div className="profile-buttons">
+              <a href="/add-contest" className="btn">Add Contest</a>
+              <a href="/edit-profile" className="btn secondary">Edit Profile</a>
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };

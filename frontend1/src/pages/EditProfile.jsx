@@ -7,29 +7,70 @@ import Navbar from "./Navbar";
 const EditProfile = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
+    country: "",
+    state: "",
     city: "",
     college: "",
     profile_pic: null,
     display_name: "",
   });
   const [preview, setPreview] = useState(null);
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const res = await fetch(`${apiUrl}/profile`, {
-        credentials: "include",
-      });
+      const res = await fetch(`${apiUrl}/profile`, { credentials: "include" });
       const data = await res.json();
-      setForm({
+      setForm((prev) => ({
+        ...prev,
+        country: data.country || "",
+        state: data.state || "",
         city: data.city || "",
         college: data.college || "",
-        profile_pic: null,
-        display_name: data.display_name || data.handle, // Default to handle if no display name exists
-      });
+        display_name: data.display_name || data.handle,
+      }));
       setPreview(data.profile_pic);
     };
+
+    const fetchCountries = async () => {
+      const res = await fetch("https://countriesnow.space/api/v0.1/countries/positions");
+      const data = await res.json();
+      setCountries(data.data.map((c) => c.name));
+    };
+
     fetchProfile();
+    fetchCountries();
   }, []);
+
+  useEffect(() => {
+    const fetchStates = async () => {
+      if (!form.country) return;
+      const res = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country: form.country }),
+      });
+      const data = await res.json();
+      setStates(data.data.states.map((s) => s.name));
+    };
+    fetchStates();
+  }, [form.country]);
+
+  useEffect(() => {
+    const fetchCities = async () => {
+      if (!form.country || !form.state) return;
+      const res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country: form.country, state: form.state }),
+      });
+      const data = await res.json();
+      setCities(data.data);
+    };
+    fetchCities();
+  }, [form.state]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -43,8 +84,9 @@ const EditProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const formData = new FormData();
+    formData.append("country", form.country);
+    formData.append("state", form.state);
     formData.append("city", form.city);
     formData.append("college", form.college);
     formData.append("display_name", form.display_name);
@@ -54,14 +96,14 @@ const EditProfile = () => {
 
     try {
       const res = await fetch(`${apiUrl}/update-profile`, {
-        method: "PUT", // Use PUT for profile updates
-        body: formData, // Use FormData to send the profile picture and other fields
-        credentials: "include", // include cookies (for session handling)
+        method: "PUT",
+        body: formData,
+        credentials: "include",
       });
 
       if (res.ok) {
         alert("Profile updated successfully!");
-        navigate("/profile"); // Redirect to the profile page to reflect changes
+        navigate("/profile");
       } else {
         const result = await res.json();
         alert(result.message || "Failed to update profile.");
@@ -88,13 +130,31 @@ const EditProfile = () => {
             />
           </div>
           <div className="form-group">
+            <label>Country:</label>
+            <select name="country" value={form.country} onChange={handleChange}>
+              <option value="">Select Country</option>
+              {countries.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>State:</label>
+            <select name="state" value={form.state} onChange={handleChange}>
+              <option value="">Select State</option>
+              {states.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
             <label>City:</label>
-            <input
-              type="text"
-              name="city"
-              value={form.city}
-              onChange={handleChange}
-            />
+            <select name="city" value={form.city} onChange={handleChange}>
+              <option value="">Select City</option>
+              {cities.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label>College:</label>
