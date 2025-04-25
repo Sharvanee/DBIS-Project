@@ -39,8 +39,13 @@ app.use(
   session({
     secret: "your_secret_key",
     resave: false,
-    saveUninitialized: true,
-    cookie: { httpOnly: true, maxAge: 1000 * 60 * 60 * 24 }, // 1 day
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // default to 30 days
+      // maxAge: 3 * 60 * 1000, // default to 3 minutes
+    },
   })
 );
 
@@ -106,7 +111,7 @@ app.post("/signup", async (req, res) => {
        RETURNING id, created_at`,
       [handle, email, hashed_pwd]
     );
-    
+
     const { id: userId, created_at } = insertResult.rows[0];
 
     req.session.user = {
@@ -114,7 +119,7 @@ app.post("/signup", async (req, res) => {
       handle,
       email,
     };
-    
+
     res.status(200).json({
       id: userId,
       handle,
@@ -122,7 +127,7 @@ app.post("/signup", async (req, res) => {
       created_at,
       message: "User Registered Successfully",
     });
-    
+
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({ message: "Error signing up" });
@@ -134,28 +139,39 @@ app.post("/signup", async (req, res) => {
 // use correct status codes and messages mentioned in the lab document
 app.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-    console.log("user", user.rows);
-    if (user.rows.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid credentials" });
+    const { email, password, rememberMe } = req.body;
+    const userQuery = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+
+    if (userQuery.rows.length === 0) {
+      return res.status(400).json({ success: false, message: "Invalid credentials" });
     }
-    const correct_pwd = await bcrypt.compare(
-      password,
-      user.rows[0].password_hash
-    );
+
+    const user = userQuery.rows[0];
+
+    // If the user signed up using Google OAuth
+    // if (!user.password_hash) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Please log in using Google",
+    //   });
+    // }
+
+    const correct_pwd = await bcrypt.compare(password, user.password_hash);
     if (!correct_pwd) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid credentials" });
+      return res.status(400).json({ success: false, message: "Invalid credentials" });
+    }
+
+    // Set session cookie maxAge depending on rememberMe
+    if (rememberMe) {
+      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+    } else {
+      req.session.cookie.expires = false; // Session cookie
     }
 
     req.session.user = {
-      id: user.rows[0].id,
-      handle: user.rows[0].handle,
-      email: user.rows[0].email,
+      id: user.id,
+      handle: user.handle,
+      email: user.email,
     };
 
     res.status(200).json({ success: true, message: "Login successful" });
@@ -164,6 +180,7 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ success: false, message: "Error logging in" });
   }
 });
+
 
 // TODO: Implement API used to check if the client is currently logged in or not.
 // use correct status codes and messages mentioned in the lab document
@@ -176,6 +193,14 @@ app.get("/isLoggedIn", async (req, res) => {
     return res.status(400).json({ message: "Not logged in" });
   }
 });
+// app.get("/isLoggedIn", async (req, res) => {
+//   if (req.isAuthenticated() && req.user) {
+//     return res.status(200).json({ message: "Logged in", handle: req.user.handle });
+//   } else {
+//     return res.status(400).json({ message: "Not logged in" });
+//   }
+// });
+
 
 // TODO: Implement API used to logout the user
 // use correct status codes and messages mentioned in the lab document
@@ -213,7 +238,7 @@ app.get("/problem-set", async (req, res) => {
     LEFT JOIN tags t ON t.id = pt.tag_id
     GROUP BY p.problem_id, p.title, p.difficulty`
   );
-  
+
   console.log("problems", problems.rows);
   res.json(problems.rows);
 });
@@ -474,19 +499,26 @@ app.get("/submission/:id", async (req, res) => {
   res.json(submission.rows[0]);
 });
 
-
+// Redirect user to Google for authentication
 app.get(
   "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+  })
 );
 
+// Handle callback from Google
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", {
-    successRedirect: "http://localhost:3000/dashboard", // Redirect after success
-    failureRedirect: "http://localhost:3000/login", // Redirect after failure
-  })
+    failureRedirect: "http://localhost:3000/login", // React frontend login page
+  }),
+  (req, res) => {
+    // Successful login: redirect to your React frontend
+    res.redirect("http://localhost:3000/dashboard"); // Adjust as needed
+  }
 );
+
 
 app.get("/checkHandle", async (req, res) => {
   const { handle } = req.query;

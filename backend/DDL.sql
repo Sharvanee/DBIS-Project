@@ -8,12 +8,15 @@ DROP TABLE IF EXISTS users CASCADE;
 
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
-  handle VARCHAR(50) UNIQUE NOT NULL,
+  handle VARCHAR(50) UNIQUE,
   email VARCHAR(100) UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
+  password_hash TEXT,
+  google_id TEXT UNIQUE,
   rating INTEGER DEFAULT 1500,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CHECK (password_hash IS NOT NULL OR google_id IS NOT NULL)
 );
+
 
 CREATE TABLE contests (
   contest_id SERIAL PRIMARY KEY,
