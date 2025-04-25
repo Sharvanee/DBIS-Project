@@ -10,13 +10,12 @@ const Problem = () => {
   const navigate = useNavigate();
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showSubmit, setShowSubmit] = useState(false);
   const [language, setLanguage] = useState("cpp");
   const [code, setCode] = useState("");
-  const [uploadMode, setUploadMode] = useState("text");
   const [file, setFile] = useState(null);
+  const [uploadMode, setUploadMode] = useState("text");
 
-  // Theme toggle effect
+  // Theme effect
   useEffect(() => {
     const theme = localStorage.getItem("theme") || "light";
     if (theme === "dark") document.body.classList.add("dark");
@@ -57,17 +56,15 @@ const Problem = () => {
         });
 
         if (!res.ok) {
-          const text = await res.text();
-          console.error("Server error response:", text);
-          if (text.includes("not logged in") || res.status === 401) navigate("/login");
-          else navigate("/not-found");
+          navigate("/not-found");
           return;
         }
 
         const data = await res.json();
+        console.log("Problem data:", data);
         setProblem(data);
       } catch (err) {
-        console.error("Error fetching problem:", err);
+        console.error("Fetch error:", err);
         navigate("/not-found");
       } finally {
         setLoading(false);
@@ -77,188 +74,207 @@ const Problem = () => {
     fetchProblem();
   }, [id, navigate]);
 
-  if (loading) return <p>Loading problem...</p>;
+  const handleSubmit = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ problem_id: id, language, code }),
+      });
+
+      const result = await res.json();
+      if (res.ok) {
+        alert("Submission successful!");
+        setCode("");
+        setFile(null);
+      } else {
+        alert("Submission failed: " + result.error);
+      }
+    } catch (err) {
+      console.error("Submit error:", err);
+      alert("Something went wrong!");
+    }
+  };
+
+  // Handle Run All Examples
+  const handleRunAllExamples = async () => {
+    try {
+      const examples = problem.examples.map((ex) => ({
+        input: ex.input,
+        output: ex.output,
+      }));
+
+      const res = await fetch(`${apiUrl}/runAllExamples`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          problem_id: id,
+          language,
+          code,
+          examples,
+        }),
+      });
+
+      const result = await res.json();
+      if (res.ok) {
+        // Update examples with test results
+        const updatedExamples = problem.examples.map((ex, index) => ({
+          ...ex,
+          result: result.results[index]
+            ? "Passed"
+            : `Failed (Expected: ${ex.output}, Got: ${result.results[index]})`,
+        }));
+        setProblem({ ...problem, examples: updatedExamples });
+      } else {
+        alert("Error running all examples: " + result.error);
+      }
+    } catch (err) {
+      console.error("Run All Examples error:", err);
+      alert("Something went wrong during running all examples!");
+    }
+  };
+
+  if (loading) return <p>Loading...</p>;
   if (!problem) return <p>Problem not found.</p>;
 
   return (
-    <>
+    <div className="problem-page">
       <Navbar />
-      <div className="problem-container">
-        <button
-          onClick={() => {
-            const newTheme = document.body.classList.toggle("dark") ? "dark" : "light";
-            localStorage.setItem("theme", newTheme);
-          }}
-          style={{ float: "right", margin: "10px" }}
-        >
-          Toggle Theme
-        </button>
+      <div className="problem-main">
+        {/* Left side */}
+        <div className="problem-left">
+          <h1>{problem.title}</h1>
+          <p><strong>Difficulty:</strong> {problem.difficulty}</p>
+          <p><strong>Tags:</strong> {problem.tags.join(", ")}</p>
+          <hr />
+          <div className="problem-description">
+            <p>{problem.description}</p>
+          </div>
+          {problem.examples && problem.examples.length > 0 ? (
+            <div className="problem-examples">
+              <h3>Examples:</h3>
+              {problem.examples.map((ex, index) => (
+                <div key={index} className="example-block">
+                  <p><strong>Example {index + 1}:</strong></p>
+                  <pre><strong>Input:</strong> {ex.input}</pre>
+                  <pre><strong>Output:</strong> {ex.output}</pre>
+                  {ex.explanation && (
+                    <pre><strong>Explanation:</strong> {ex.explanation}</pre>
+                  )}
+                  {ex.result && <p><strong>Test Result: </strong>{ex.result}</p>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>No examples available for this problem.</p>
+          )}
 
-        <h1>{problem.title}</h1>
-        <p><strong>Difficulty:</strong> {problem.difficulty}</p>
-        <p><strong>Tags:</strong> {problem.tags.join(", ")}</p>
-        <hr />
-        <div className="problem-description">
-          <p>{problem.description}</p>
+          <div className="submission-table">
+            <h2>Submissions</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                  <th>Memory</th>
+                  <th>Lang</th>
+                </tr>
+              </thead>
+              <tbody>
+                {problem.submissions?.length > 0 ? (
+                  problem.submissions.map((s) => (
+                    <tr key={s.id}>
+                      <td><a href={`/submission/${s.id}`}>{s.id}</a></td>
+                      <td>{s.verdict}</td>
+                      <td>{s.runtime}</td>
+                      <td>{s.memory}</td>
+                      <td>{s.language}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan="5">No submissions yet.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <button onClick={() => setShowSubmit(true)}>Submit Solution</button>
 
-        {showSubmit && (
-          <div className="submission-form">
-            <h2>Submit Your Solution</h2>
-
-            <label>Choose Language: </label>
+        {/* Right side */}
+        <div className="problem-right">
+          <div className="editor-controls">
             <select value={language} onChange={(e) => setLanguage(e.target.value)}>
               <option value="cpp">C++</option>
               <option value="python">Python</option>
               <option value="java">Java</option>
             </select>
 
-            <br /><br />
-
-            <label>
-              <input
-                type="radio"
-                checked={uploadMode === "text"}
-                onChange={() => setUploadMode("text")}
-              />
-              Type Code
-            </label>
-            <label style={{ marginLeft: "15px" }}>
-              <input
-                type="radio"
-                checked={uploadMode === "file"}
-                onChange={() => setUploadMode("file")}
-              />
-              Upload File
-            </label>
-
-            <br /><br />
-
-            {uploadMode === "text" ? (
-              <>
-                <label>Code:</label><br />
-                <Editor
-                  height="400px"
-                  defaultLanguage={
-                    language === "cpp" ? "cpp" :
-                      language === "python" ? "python" :
-                        "java"
-                  }
-                  theme={document.body.classList.contains("dark") ? "vs-dark" : "light"}
-                  value={code}
-                  onChange={(value) => setCode(value || "")}
-                  onMount={(editor, monaco) => {
-                    // Set format on Ctrl+Shift+I
-                    editor.addCommand(
-                      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyI,
-                      () => {
-                        editor.getAction("editor.action.formatDocument").run();
-                      }
-                    );
-                  }}
-                  options={{
-                    fontSize: 14,
-                    minimap: { enabled: false },
-                    formatOnType: true,
-                    formatOnPaste: true,
-                    wordWrap: "on",
-                    autoClosingBrackets: "always",
-                    suggestOnTriggerCharacters: true,
-                    tabSize: 2,
-                  }}
-                />
-              </>
-            ) : (
-              <>
+            <div style={{ marginTop: "10px" }}>
+              <label>
                 <input
-                  type="file"
-                  accept=".cpp,.py,.java,.txt"
-                  onChange={(e) => {
-                    const uploadedFile = e.target.files[0];
-                    setFile(uploadedFile);
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                      setCode(event.target.result);
-                    };
-                    reader.readAsText(uploadedFile);
-                  }}
+                  type="radio"
+                  checked={uploadMode === "text"}
+                  onChange={() => setUploadMode("text")}
                 />
-                {file && <p>Selected file: {file.name}</p>}
-              </>
-            )}
-
-            <br /><br />
-            <button
-              onClick={async () => {
-                try {
-                  const res = await fetch(`${apiUrl}/submit`, {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({
-                      problem_id: id,
-                      language,
-                      code,
-                    }),
-                  });
-
-                  const result = await res.json();
-                  if (res.ok) {
-                    alert("Submission successful!");
-                    setShowSubmit(false);
-                    setCode("");
-                    setFile(null);
-                  } else {
-                    alert("Submission failed: " + result.error);
-                  }
-                } catch (err) {
-                  console.error("Submission error:", err);
-                  alert("Something went wrong!");
-                }
-              }}
-            >
-              Submit
-            </button>
-
-            <button onClick={() => setShowSubmit(false)} style={{ marginLeft: "10px" }}>
-              Cancel
-            </button>
+                Type Code
+              </label>
+              <label style={{ marginLeft: "15px" }}>
+                <input
+                  type="radio"
+                  checked={uploadMode === "file"}
+                  onChange={() => setUploadMode("file")}
+                />
+                Upload File
+              </label>
+            </div>
           </div>
-        )}
 
-        <div className="submission-table" style={{ marginTop: "30px" }}>
-          <h2>Submissions</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Submission ID</th>
-                <th>Status</th>
-                <th>Time</th>
-                <th>Memory</th>
-                <th>Language</th>
-              </tr>
-            </thead>
-            <tbody>
-              {problem.submissions && problem.submissions.length > 0 ? (
-                problem.submissions.map((submission) => (
-                  <tr key={submission.id}>
-                    <td><a href={`/submission/${submission.id}`}>{submission.id}</a></td>
-                    <td>{submission.verdict}</td>
-                    <td>{submission.runtime}</td>
-                    <td>{submission.memory}</td>
-                    <td>{submission.language}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5">No submissions yet.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          {uploadMode === "file" ? (
+            <>
+              <input
+                type="file"
+                accept=".cpp,.py,.java,.txt"
+                onChange={(e) => {
+                  const uploaded = e.target.files[0];
+                  setFile(uploaded);
+                  const reader = new FileReader();
+                  reader.onload = (ev) => setCode(ev.target.result);
+                  reader.readAsText(uploaded);
+                }}
+              />
+              {file && <p>Selected file: {file.name}</p>}
+            </>
+          ) : (
+            <Editor
+              height="calc(100vh - 200px)"
+              defaultLanguage={language}
+              theme={document.body.classList.contains("dark") ? "vs-dark" : "light"}
+              value={code}
+              onChange={(v) => setCode(v || "")}
+              options={{
+                fontSize: 14,
+                minimap: { enabled: false },
+                wordWrap: "on",
+                automaticLayout: true,
+              }}
+            />
+          )}
+
+          <div style={{ marginTop: "10px" }}>
+            <button
+              onClick={handleRunAllExamples}
+              style={{ marginTop: "10px", marginRight: "10px" }}
+            >
+              Run All Examples
+            </button>
+            <button className="submit-btn" onClick={handleSubmit}>Submit</button>
+          </div>
         </div>
       </div>
     </>
