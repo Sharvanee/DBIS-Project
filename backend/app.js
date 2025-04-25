@@ -12,6 +12,10 @@ const port = 4000;
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const profileRoutes = require("./routes/profile");
+// const contestRoutes = require("./routes/contest");
+const authRoutes = require("./routes/auth");
+const aiRoutes = require("./routes/ai");
 
 // Setup for file uploads (profile pictures)
 const storage = multer.diskStorage({
@@ -29,8 +33,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// PostgreSQL connection
-// NOTE: use YOUR postgres username and password here
 const pool = new Pool({
   user: "test",
   host: "localhost",
@@ -42,8 +44,6 @@ const pool = new Pool({
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-// CORS: Give permission to localhost:3000 (ie our React app)
-// to use this backend API
 app.use(
   cors({
     origin: "http://localhost:3000",
@@ -51,7 +51,6 @@ app.use(
   })
 );
 
-// Session information
 app.use(
   session({
     secret: "your_secret_key",
@@ -60,24 +59,18 @@ app.use(
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 30 * 24 * 60 * 60 * 1000, // default to 30 days
-      // maxAge: 3 * 60 * 1000, // default to 3 minutes
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     },
   })
 );
 
-// Middleware
 app.use(passport.initialize());
 app.use(passport.session());
-
-// Import and use auth routes
-const authRoutes = require("./routes/auth");
 app.use(authRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-const aiRoutes = require("./routes/ai");
 app.use("/api", aiRoutes);
-// app.use(aiRoutes);
+// app.use("/api", contestRoutes);
+app.use("/api/profile", profileRoutes); 
 
 function isAuthenticated(req, res, next) {
   if (!req.session.user) {
@@ -85,6 +78,91 @@ function isAuthenticated(req, res, next) {
   }
   next();
 }
+
+
+app.get("/contest/:id", isAuthenticated, async (req, res) => {
+  const contestId = req.params.id;
+  const contest = await pool.query(
+    "Select * from contests where contest_id = $1",
+    [contestId]
+  );
+  const problems = await pool.query(
+    "Select * from problems where contest_id = $1",
+    [contestId]
+  );
+
+  if (contest.rows.length === 0) {
+    return res.status(404).json({ message: "Contest not found" });
+  }
+
+  res.json({
+    title: contest.rows[0].title,
+    start_time: contest.rows[0].start_time,
+    duration: contest.rows[0].duration,
+    problems: problems.rows.map((problem) => ({
+      id: problem.problem_id,
+      title: problem.title,
+      difficulty: problem.difficulty,
+    })),
+  });
+});
+
+app.get("/contest/:id/stats", isAuthenticated, async (req, res) => {
+  const contestId = req.params.id;
+
+  try {
+    // Problem-level stats
+    const problemStatsQuery = await pool.query(
+      `
+      SELECT 
+        p.problem_id,
+        COUNT(s.id) AS total_submissions,
+        COUNT(CASE WHEN s.verdict = 'Accepted' THEN 1 END) AS accepted_submissions
+      FROM problems p
+      LEFT JOIN submissions s ON p.problem_id = s.problem_id
+      WHERE p.contest_id = $1
+      GROUP BY p.problem_id
+      `,
+      [contestId]
+    );
+
+    const problemStats = {};
+    problemStatsQuery.rows.forEach(row => {
+      problemStats[row.problem_id] = {
+        total_submissions: parseInt(row.total_submissions),
+        accepted_submissions: parseInt(row.accepted_submissions)
+      };
+    });
+
+    // User-level leaderboard
+    const leaderboardQuery = await pool.query(
+      `
+      SELECT
+        s.user_id,
+        u.handle,
+        COUNT(DISTINCT s.problem_id) AS solved_count,
+        MIN(s.created_at) AS first_solved_at
+      FROM submissions s
+      INNER JOIN problems p ON p.problem_id = s.problem_id
+      INNER JOIN users u ON u.id = s.user_id
+      WHERE p.contest_id = $1 AND s.verdict = 'Accepted'
+      GROUP BY s.user_id, u.handle
+      ORDER BY solved_count DESC, first_solved_at ASC
+      `,
+      [contestId]
+    );
+    
+
+    res.json({
+      problemStats,
+      userLeaderboard: leaderboardQuery.rows
+    });
+
+  } catch (err) {
+    console.error("Error fetching contest stats:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 app.post("/signup", async (req, res) => {
   try {
@@ -149,25 +227,15 @@ app.post("/login", async (req, res) => {
     }
 
     const user = userQuery.rows[0];
-
-    // If the user signed up using Google OAuth
-    // if (!user.password_hash) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "Please log in using Google",
-    //   });
-    // }
-
     const correct_pwd = await bcrypt.compare(password, user.password_hash);
     if (!correct_pwd) {
       return res.status(400).json({ success: false, message: "Invalid credentials" });
     }
 
-    // Set session cookie maxAge depending on rememberMe
     if (rememberMe) {
-      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
     } else {
-      req.session.cookie.expires = false; // Session cookie
+      req.session.cookie.expires = false;
     }
 
     req.session.user = {
@@ -184,8 +252,6 @@ app.post("/login", async (req, res) => {
 });
 
 
-// TODO: Implement API used to check if the client is currently logged in or not.
-// use correct status codes and messages mentioned in the lab document
 app.get("/isLoggedIn", async (req, res) => {
   if (req.session.user) {
     return res
@@ -195,17 +261,8 @@ app.get("/isLoggedIn", async (req, res) => {
     return res.status(400).json({ message: "Not logged in" });
   }
 });
-// app.get("/isLoggedIn", async (req, res) => {
-//   if (req.isAuthenticated() && req.user) {
-//     return res.status(200).json({ message: "Logged in", handle: req.user.handle });
-//   } else {
-//     return res.status(400).json({ message: "Not logged in" });
-//   }
-// });
 
 
-// TODO: Implement API used to logout the user
-// use correct status codes and messages mentioned in the lab document
 app.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
@@ -217,13 +274,6 @@ app.post("/logout", (req, res) => {
   });
 });
 
-////////////////////////////////////////////////////
-// APIs for the products
-// use correct status codes and messages mentioned in the lab document
-// TODO: Fetch and display all products from the database
-
-////////////////////////////////////////////////////
-// Start the server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
@@ -241,7 +291,6 @@ app.get("/problem-set", isAuthenticated, async (req, res) => {
     GROUP BY p.problem_id, p.title, p.difficulty`
   );
 
-  // console.log("problems", problems.rows);
   res.json(problems.rows);
 });
 
@@ -286,31 +335,8 @@ app.get("/contests", isAuthenticated, async (req, res) => {
   res.json(contests.rows);
 });
 
-app.get("/contest/:id", isAuthenticated, async (req, res) => {
-  const contestId = req.params.id;
-  const contest = await pool.query(
-    "Select * from contests where contest_id = $1",
-    [contestId]
-  );
-  const problems = await pool.query(
-    "Select * from problems where contest_id = $1",
-    [contestId]
-  );
 
-  if (contest.rows.length === 0) {
-    return res.status(404).json({ message: "Contest not found" });
-  }
 
-  res.json({
-    title: contest.rows[0].title,
-    start_time: contest.rows[0].start_time,
-    problems: problems.rows.map((problem) => ({
-      id: problem.problem_id,
-      title: problem.title,
-      difficulty: problem.difficulty,
-    })),
-  });
-});
 
 app.post("/add-contest", isAuthenticated, async (req, res) => {
   try {
@@ -329,17 +355,21 @@ app.post("/add-contest", isAuthenticated, async (req, res) => {
       });
     }
 
-    // Insert contest
+    const maxContestIdRes = await pool.query(
+      `SELECT MAX(contest_id) FROM contests`
+    );
+    const maxContestId = maxContestIdRes.rows[0].max || 0;
+    const contestId = maxContestId + 1;
+
     const contestInsertRes = await pool.query(
       `
-        INSERT INTO contests (contest_name, start_time, duration)
-        VALUES ($1, $2, $3)
+        INSERT INTO contests (contest_id, contest_name, start_time, duration)
+        VALUES ($1, $2, $3, $4)
         RETURNING contest_id
       `,
-      [title, start_time, duration_minutes]
+      [contestId, title, start_time, duration_minutes]
     );
 
-    const contestId = contestInsertRes.rows[0].contest_id;
 
     for (let i = 0; i < problems.length; i++) {
       const {
@@ -360,7 +390,7 @@ app.post("/add-contest", isAuthenticated, async (req, res) => {
         testcases,
         model_solution,
       } = problems[i];
-      // console.log(problem_id);
+
       const problemInsertRes = await pool.query(
         `
           INSERT INTO problems (
@@ -397,7 +427,6 @@ app.post("/add-contest", isAuthenticated, async (req, res) => {
 
       const insertedProblemId = problemInsertRes.rows[0].problem_id;
 
-      // Handle tags
       if (tags) {
         const tagList = tags.split(",").map((t) => t.trim().toLowerCase());
 
@@ -502,7 +531,6 @@ app.get("/submission/:id", isAuthenticated, async (req, res) => {
   res.json(submission.rows[0]);
 });
 
-// Redirect user to Google for authentication
 app.get(
   "/auth/google",
   passport.authenticate("google", {
@@ -510,15 +538,13 @@ app.get(
   })
 );
 
-// Handle callback from Google
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:3000/login", // React frontend login page
+    failureRedirect: "http://localhost:3000/login",
   }),
   (req, res) => {
-    // Successful login: redirect to your React frontend
-    res.redirect("http://localhost:3000/dashboard"); // Adjust as needed
+    res.redirect("http://localhost:3000/dashboard");
   }
 );
 
@@ -612,11 +638,12 @@ app.put(
        WHERE id = $7`,
         updateFields
       );
-
-      // res.status(200).json({ message: "Profile updated successfully" });
     } catch (err) {
       console.error("Error updating profile:", err);
       res.status(500).json({ message: "Failed to update profile" });
     }
   }
 );
+
+
+module.exports.isAuthenticated = isAuthenticated;

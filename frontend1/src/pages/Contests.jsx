@@ -8,8 +8,11 @@ const ContestList = () => {
   const navigate = useNavigate();
   const [contests, setContests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const contestsPerPage = 15;
+
+  // Pagination state for active and past contests
+  const [activeCurrentPage, setActiveCurrentPage] = useState(1);
+  const [pastCurrentPage, setPastCurrentPage] = useState(1);
+  const contestsPerPage = 10;
 
   useEffect(() => {
     const checkLogin = async () => {
@@ -43,26 +46,50 @@ const ContestList = () => {
     fetchContests();
   }, []);
 
-  const indexOfLast = currentPage * contestsPerPage;
-  const indexOfFirst = indexOfLast - contestsPerPage;
-  const currentContests = contests.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(contests.length / contestsPerPage);
+  const now = new Date();
 
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
+  // Filter active and past contests
+  const activeContests = contests.filter((contest) => {
+    const start = new Date(contest.start_time);
+    const end = new Date(start.getTime() + contest.duration * 60 * 1000);
+    return now >= start && now <= end;
+  });
+
+  const pastContests = contests.filter((contest) => {
+    const start = new Date(contest.start_time);
+    const end = new Date(start.getTime() + contest.duration * 60 * 1000);
+    return now > end;
+  });
+
+  // Get active and past contests based on pagination
+  const indexOfActiveLast = activeCurrentPage * contestsPerPage;
+  const indexOfActiveFirst = indexOfActiveLast - contestsPerPage;
+  const activeContestsToShow = activeContests.slice(indexOfActiveFirst, indexOfActiveLast);
+
+  const indexOfPastLast = pastCurrentPage * contestsPerPage;
+  const indexOfPastFirst = indexOfPastLast - contestsPerPage;
+  const pastContestsToShow = pastContests.slice(indexOfPastFirst, indexOfPastLast);
+
+  const totalActivePages = Math.ceil(activeContests.length / contestsPerPage);
+  const totalPastPages = Math.ceil(pastContests.length / contestsPerPage);
+
+  const handleActivePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalActivePages) {
+      setActiveCurrentPage(newPage);
     }
   };
 
-  return (
-    <div className="contest-list-container">
-      <Navbar />
-      <h1>Contests</h1>
+  const handlePastPageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPastPages) {
+      setPastCurrentPage(newPage);
+    }
+  };
 
-      {loading ? (
-        <p>Loading contests...</p>
-      ) : contests.length === 0 ? (
-        <p>No contests available.</p>
+  const renderContestTable = (title, contestList, currentPage, totalPages, handlePageChange) => (
+    <>
+      <h2>{title}</h2>
+      {contestList.length === 0 ? (
+        <p>No {title.toLowerCase()}.</p>
       ) : (
         <>
           <table className="contest-table">
@@ -70,26 +97,32 @@ const ContestList = () => {
               <tr>
                 <th>Title</th>
                 <th>Start Time</th>
+                <th>End Time</th> {/* Added End Time column */}
               </tr>
             </thead>
             <tbody>
-              {currentContests.map((contest, index) => (
-                <tr key={index}>
-                  <td>
-                    <a
-                      href={`/contest/${contest.contest_id}`}
-                      className="contest-link"
-                    >
-                      {contest.contest_name}
-                    </a>
-                  </td>
-                  <td>{new Date(contest.start_time).toLocaleString()}</td>
-                </tr>
-              ))}
+              {contestList.map((contest, index) => {
+                const start = new Date(contest.start_time);
+                const end = new Date(start.getTime() + contest.duration * 60 * 1000); // Calculate end time
+                return (
+                  <tr key={index}>
+                    <td>
+                      <a
+                        href={`/contest/${contest.contest_id}`}
+                        className="contest-link"
+                      >
+                        {contest.contest_name}
+                      </a>
+                    </td>
+                    <td>{start.toLocaleString()}</td>
+                    <td>{end.toLocaleString()}</td> {/* Display the calculated end time */}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
-          {/* Pagination Controls with Ellipsis */}
+          {/* Pagination Controls */}
           <div className="pagination-controls">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
@@ -153,7 +186,38 @@ const ContestList = () => {
           </div>
         </>
       )}
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      <Navbar />
+      <div className="contest-list-container">
+        <h1>Contests</h1>
+        {loading ? (
+          <p>Loading contests...</p>
+        ) : contests.length === 0 ? (
+          <p>No contests available.</p>
+        ) : (
+          <>
+            {renderContestTable(
+              "Active Contests",
+              activeContestsToShow,
+              activeCurrentPage,
+              totalActivePages,
+              handleActivePageChange
+            )}
+            {renderContestTable(
+              "Past Contests",
+              pastContestsToShow,
+              pastCurrentPage,
+              totalPastPages,
+              handlePastPageChange
+            )}
+          </>
+        )}
+      </div>
+    </>
   );
 };
 

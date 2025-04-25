@@ -1,17 +1,20 @@
 .pageContainer {
   min-height: 100vh;
   background-color: #f1f5f9;
-  padding: 3rem 1.5rem;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .container {
-  max-width: 850px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 900px;
   background-color: #ffffff;
   padding: 2.5rem;
   border-radius: 1rem;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 .heading {
@@ -22,58 +25,46 @@
   color: #1f2937;
 }
 
-.error {
-  color: #dc2626;
-  text-align: center;
-  font-weight: 500;
-  margin-bottom: 1rem;
-}
-
-.success {
-  color: #16a34a;
-  text-align: center;
-  font-weight: 500;
-  margin-bottom: 1rem;
+.logoutBtn {
+  margin-bottom: 2rem;
+  align-self: flex-end;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
-.input,
-.textarea {
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.row > .input, .row > .dateInput {
+  flex: 1;
+  min-width: 200px;
+}
+
+.input, .dateInput, .textarea {
   width: 100%;
   padding: 0.75rem 1rem;
   border: 1px solid #cbd5e1;
   border-radius: 0.625rem;
   font-size: 1rem;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.input:focus,
-.textarea:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-  outline: none;
 }
 
 .textarea {
-  height: 6.5rem;
+  height: 120px;
   resize: vertical;
-}
-
-.codeArea {
-  font-family: 'Courier New', monospace;
-  background-color: #f3f4f6;
-  height: 10rem;
 }
 
 .subheading {
   font-size: 1.5rem;
   font-weight: 600;
   margin-top: 2rem;
+  margin-bottom: 1rem;
   color: #334155;
   border-bottom: 2px solid #e5e7eb;
   padding-bottom: 0.5rem;
@@ -81,13 +72,13 @@
 
 .problemBox {
   background-color: #f8fafc;
-  padding: 1.25rem;
+  padding: 1.5rem;
   border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
+  border-radius: 1rem;
+  margin-top: 1rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin-top: 1rem;
 }
 
 .problemHeader {
@@ -97,38 +88,9 @@
 }
 
 .problemHeader h3 {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #1e293b;
-}
-
-.removeBtn {
-  background: transparent;
-  border: none;
-  color: #ef4444;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: color 0.2s;
-}
-
-.removeBtn:hover {
-  color: #b91c1c;
-}
-
-.addBtn {
-  background-color: #e0f2fe;
-  color: #0369a1;
-  font-weight: 600;
-  padding: 0.75rem 1.25rem;
-  border: none;
-  border-radius: 0.625rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.addBtn:hover {
-  background-color: #bae6fd;
 }
 
 .submitBtn {
@@ -148,40 +110,3 @@
 .submitBtn:hover {
   background-color: #1d4ed8;
 }
-
-
-.generateBtn {
-  margin-top: 8px;
-  background-color: #4caf50;
-  color: white;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.generateBtn:hover {
-  background-color: #388e3c;
-}
-
-.solutionPreview {
-  margin-top: 10px;
-  background: #f7f7f7;
-  border: 1px solid #ddd;
-  padding: 10px;
-  border-radius: 6px;
-}
-
-.codeBlock {
-  font-family: monospace;
-  white-space: pre-wrap;
-  overflow-x: auto;
-  font-size: 0.9rem;
-  color: #333;
-}
-
-.input[type="file"] {
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
-}
-

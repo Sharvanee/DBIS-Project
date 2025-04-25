@@ -55,14 +55,6 @@ CREATE TABLE problems (
   model_solution TEXT
 );
 
-CREATE TABLE solved_problems (
-  submission_id SERIAL PRIMARY KEY,
-  problem_id VARCHAR(10) REFERENCES problems(problem_id) ON DELETE CASCADE,
-  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  verdict VARCHAR(50) CHECK (verdict IN ('Accepted', 'Wrong Answer', 'TLE', 'Compilation Error')),
-  solved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE tags (
   id SERIAL PRIMARY KEY,
   name VARCHAR(50) UNIQUE NOT NULL

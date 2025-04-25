@@ -56,112 +56,114 @@ const ProblemList = () => {
   };
 
   return (
-    <div className="problem-list-container">
+    <>
       <Navbar />
-      <h1 className="problem-heading">Problem Set</h1>
+      <div className="problem-list-container">
+        <h1 className="problem-heading">Problem Set</h1>
 
-      {loading ? (
-        <p className="loading">Loading problems...</p>
-      ) : problems.length === 0 ? (
-        <p className="no-problems">No problems found.</p>
-      ) : (
-        <>
-          <table className="problem-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Difficulty</th>
-                <th>Tags</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentProblems.map((problem, index) => (
-                <tr key={index}>
-                  <td>{problem.problem_id}</td>
-                  <td>
-                    <a
-                      href={`/problem/${problem.problem_id}`}
-                      className="problem-link"
-                    >
-                      {problem.title}
-                    </a>
-                  </td>
-                  <td>{problem.difficulty}</td>
-                  <td>
-                    {problem.tags.map((tag, i) => (
-                      <span key={i} className="tag">
-                        {tag}
-                      </span>
-                    ))}
-                  </td>
+        {loading ? (
+          <p className="loading">Loading problems...</p>
+        ) : problems.length === 0 ? (
+          <p className="no-problems">No problems found.</p>
+        ) : (
+          <>
+            <table className="problem-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Difficulty</th>
+                  <th>Tags</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {currentProblems.map((problem, index) => (
+                  <tr key={index}>
+                    <td>{problem.problem_id}</td>
+                    <td>
+                      <a
+                        href={`/problem/${problem.problem_id}`}
+                        className="problem-link"
+                      >
+                        {problem.title}
+                      </a>
+                    </td>
+                    <td>{problem.difficulty}</td>
+                    <td>
+                      {problem.tags.map((tag, i) => (
+                        <span key={i} className="tag">
+                          {tag}
+                        </span>
+                      ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-          {/* Pagination with Ellipsis */}
-          <div className="pagination-controls">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Prev
-            </button>
+            {/* Pagination with Ellipsis */}
+            <div className="pagination-controls">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                Prev
+              </button>
 
-            {currentPage > 2 && (
-              <>
-                <button
-                  onClick={() => handlePageChange(1)}
-                  className={currentPage === 1 ? "active-page" : ""}
-                >
-                  1
-                </button>
-                {currentPage > 3 && <span className="ellipsis">...</span>}
-              </>
-            )}
+              {currentPage > 2 && (
+                <>
+                  <button
+                    onClick={() => handlePageChange(1)}
+                    className={currentPage === 1 ? "active-page" : ""}
+                  >
+                    1
+                  </button>
+                  {currentPage > 3 && <span className="ellipsis">...</span>}
+                </>
+              )}
 
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter(
-                (num) =>
-                  num === currentPage ||
-                  num === currentPage - 1 ||
-                  num === currentPage + 1
-              )
-              .map((num) => (
-                <button
-                  key={num}
-                  onClick={() => handlePageChange(num)}
-                  className={currentPage === num ? "active-page" : ""}
-                >
-                  {num}
-                </button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(
+                  (num) =>
+                    num === currentPage ||
+                    num === currentPage - 1 ||
+                    num === currentPage + 1
+                )
+                .map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => handlePageChange(num)}
+                    className={currentPage === num ? "active-page" : ""}
+                  >
+                    {num}
+                  </button>
+                ))}
 
-            {currentPage < totalPages - 1 && (
-              <>
-                {currentPage < totalPages - 2 && (
-                  <span className="ellipsis">...</span>
-                )}
-                <button
-                  onClick={() => handlePageChange(totalPages)}
-                  className={currentPage === totalPages ? "active-page" : ""}
-                >
-                  {totalPages}
-                </button>
-              </>
-            )}
+              {currentPage < totalPages - 1 && (
+                <>
+                  {currentPage < totalPages - 2 && (
+                    <span className="ellipsis">...</span>
+                  )}
+                  <button
+                    onClick={() => handlePageChange(totalPages)}
+                    className={currentPage === totalPages ? "active-page" : ""}
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
 
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 };
 
