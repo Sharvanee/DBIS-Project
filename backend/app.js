@@ -81,6 +81,59 @@ function isAuthenticated(req, res, next) {
   next();
 }
 
+// Register or deregister for a contest
+app.post("/contest/:id/register", isAuthenticated, async (req, res) => {
+  const userId = req.session.user.id;
+  const contestId = req.params.id;
+
+  try {
+    // Check if the user is already registered
+    const result = await pool.query(
+      `SELECT * FROM contest_registrations WHERE user_id = $1 AND contest_id = $2`,
+      [userId, contestId]
+    );
+
+    if (result.rows.length > 0) {
+      // User is already registered, so let's deregister them
+      await pool.query(
+        `DELETE FROM contest_registrations WHERE user_id = $1 AND contest_id = $2`,
+        [userId, contestId]
+      );
+      return res.json({ success: true, action: "deregistered" });
+    }
+
+    // User is not registered, so register them
+    await pool.query(
+      `INSERT INTO contest_registrations (user_id, contest_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, contest_id) DO NOTHING`,
+      [userId, contestId]
+    );
+    res.json({ success: true, action: "registered" });
+  } catch (err) {
+    console.error("Contest registration error:", err);
+    res.status(500).json({ error: "Failed to register or deregister" });
+  }
+});
+
+// Get all contest registrations for the logged-in user
+app.get("/myRegistrations", isAuthenticated, async (req, res) => {
+  const userId = req.session.user.id;
+
+  try {
+    const result = await pool.query(
+      `SELECT contest_id FROM contest_registrations WHERE user_id = $1`,
+      [userId]
+    );
+
+    res.json(result.rows); // returns an array of { contest_id }
+  } catch (err) {
+    console.error("Error fetching registrations:", err);
+    res.status(500).json({ error: "Failed to fetch registrations" });
+  }
+});
+
+
 
 app.get("/contest/:id", isAuthenticated, async (req, res) => {
   const contestId = req.params.id;
@@ -301,7 +354,11 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
 
   try {
     const problem = await pool.query(
-      "SELECT title, difficulty, description, examples FROM problems WHERE problem_id = $1",
+      `SELECT p.title, p.difficulty, p.description, p.examples,
+              c.start_time AS contest_start_time, c.duration AS contest_duration
+       FROM problems p
+       LEFT JOIN contests c ON p.contest_id = c.contest_id
+       WHERE p.problem_id = $1`,
       [problemId]
     );
 
@@ -312,7 +369,7 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
     let examples = [];
     if (problem.rows[0].examples) {
       try {
-        examples = JSON.parse(problem.rows[0].examples);  // Parse the examples JSON string
+        examples = JSON.parse(problem.rows[0].examples);
       } catch (err) {
         console.error("Error parsing examples:", err);
         examples = [{ input: "Error", output: "Unable to parse examples." }];
@@ -320,12 +377,15 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
     }
 
     const tags = await pool.query(
-      "SELECT tag.name FROM tags tag JOIN problem_tags ptag ON ptag.problem_id = $1 AND tag.id = ptag.tag_id",
+      `SELECT tag.name
+       FROM tags tag
+       JOIN problem_tags ptag ON ptag.problem_id = $1 AND tag.id = ptag.tag_id`,
       [problemId]
     );
 
     const submissions = await pool.query(
-      "SELECT * FROM submissions WHERE problem_id = $1 AND user_id = $2",
+      `SELECT * FROM submissions
+       WHERE problem_id = $1 AND user_id = $2`,
       [problemId, req.session.user.id]
     );
 
@@ -336,6 +396,8 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
       tags: tags.rows.map((tag) => tag.name),
       submissions: submissions.rows,
       examples: examples,
+      contest_start_time: problem.rows[0].contest_start_time,
+      contest_duration: problem.rows[0].contest_duration
     });
   } catch (err) {
     console.error("Error fetching problem:", err);
@@ -347,6 +409,7 @@ app.get("/contests", isAuthenticated, async (req, res) => {
   const contests = await pool.query("Select * from contests");
   res.json(contests.rows);
 });
+
 
 
 

@@ -89,3 +89,49 @@
   color: #888;
   user-select: none;
 }
+
+
+.register-button {
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.register-button:hover {
+  background-color: #0056b3;
+}
+
+
+/* Common button styles */
+.action-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+/* Register button - blue */
+.action-button.register {
+  background-color: #007bff;
+  color: white;
+}
+
+.action-button.register:hover {
+  background-color: #0056b3;
+}
+
+/* Deregister button - red */
+.action-button.deregister {
+  background-color: #dc3545;
+  color: white;
+}
+
+.action-button.deregister:hover {
+  background-color: #c82333;
+}

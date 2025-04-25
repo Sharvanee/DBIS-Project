@@ -6,7 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/Notfound";
 import ProblemSet from "./pages/ProblemSet";
 import Problem from "./pages/Problem";
-import Contests from "./pages/Contests";
+import Contests from "./pages/ContestList";
 import Contest from "./pages/Contest";
 import Profile from "./pages/Profile";
 import Submission from "./pages/Submission";

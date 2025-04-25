@@ -13,7 +13,7 @@ CREATE TABLE users (
   password_hash TEXT,
   google_id TEXT UNIQUE,
   rating INTEGER DEFAULT 1500,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   display_name TEXT,
   city TEXT,
   college TEXT,
@@ -77,4 +77,13 @@ CREATE TABLE submissions (
   memory VARCHAR(20),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE contest_registrations (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  contest_id INTEGER REFERENCES contests(contest_id) ON DELETE CASCADE,
+  registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, contest_id)
+);
+
 

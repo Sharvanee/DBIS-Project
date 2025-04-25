@@ -14,6 +14,8 @@ const Problem = () => {
   const [code, setCode] = useState("");
   const [file, setFile] = useState(null);
   const [uploadMode, setUploadMode] = useState("text");
+  const [contestEndTime, setContestEndTime] = useState(null);
+  const [countdown, setCountdown] = useState("");
 
   // Theme effect
   useEffect(() => {
@@ -61,8 +63,13 @@ const Problem = () => {
         }
 
         const data = await res.json();
-        console.log("Problem data:", data);
         setProblem(data);
+
+        if (data.contest_start_time && data.contest_duration) {
+          const end = new Date(new Date(data.contest_start_time).getTime() + data.contest_duration * 60000);
+          setContestEndTime(end);
+        }
+
       } catch (err) {
         console.error("Fetch error:", err);
         navigate("/not-found");
@@ -73,6 +80,22 @@ const Problem = () => {
 
     fetchProblem();
   }, [id, navigate]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (!contestEndTime) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const diff = Math.max(0, Math.floor((contestEndTime - now) / 1000));
+      const hours = String(Math.floor(diff / 3600)).padStart(2, "0");
+      const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
+      const seconds = String(diff % 60).padStart(2, "0");
+      setCountdown(`${hours}:${minutes}:${seconds}`);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [contestEndTime]);
 
   const handleSubmit = async () => {
     try {
@@ -99,7 +122,6 @@ const Problem = () => {
     }
   };
 
-  // Handle Run All Examples
   const handleRunAllExamples = async () => {
     try {
       const examples = problem.examples.map((ex) => ({
@@ -123,7 +145,6 @@ const Problem = () => {
 
       const result = await res.json();
       if (res.ok) {
-        // Update examples with test results
         const updatedExamples = problem.examples.map((ex, index) => ({
           ...ex,
           result: result.results[index]
@@ -146,6 +167,11 @@ const Problem = () => {
   return (
     <div className="problem-page">
       <Navbar />
+      {countdown && (
+        <div style={{ textAlign: "center", color:"red", fontSize: "1.2rem", fontWeight: "bold", margin: "10px 0" }}>
+          Contest ends in: {countdown}
+        </div>
+      )}
       <div className="problem-main">
         {/* Left side */}
         <div className="problem-left">
@@ -277,7 +303,7 @@ const Problem = () => {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
