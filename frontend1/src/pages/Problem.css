@@ -1,4 +1,4 @@
-.problem-container {
+/* .problem-container {
     max-width: 900px;
     margin: 40px auto;
     padding: 20px;
@@ -99,5 +99,131 @@
   
   a:hover {
     text-decoration: underline;
+  }
+   */
+
+   body.dark {
+    background-color: #1e1e1e;
+    color: #f5f5f5;
+  }
+  
+  .problem-page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  
+  .problem-main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+  
+  .problem-left {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background-color: var(--left-bg, #fff);
+    color: inherit;
+    border-right: 1px solid #ccc;
+  }
+  
+  body.dark .problem-left {
+    --left-bg: #121212;
+    border-right: 1px solid #444;
+  }
+  
+  .problem-right {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background-color: var(--right-bg, #f9f9f9);
+    color: inherit;
+  }
+  
+  body.dark .problem-right {
+    --right-bg: #1e1e1e;
+  }
+  
+  .problem-description {
+    white-space: pre-wrap;
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  
+  .problem-examples {
+    background-color: rgba(0, 0, 0, 0.03);
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+  }
+  
+  body.dark .problem-examples {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  pre {
+    background: #f4f4f4;
+    padding: 10px;
+    overflow-x: auto;
+    border-radius: 4px;
+  }
+  
+  body.dark pre {
+    background: #2c2c2c;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  
+  th, td {
+    padding: 8px;
+    border-bottom: 1px solid #ccc;
+    text-align: left;
+  }
+  
+  body.dark th, body.dark td {
+    border-bottom: 1px solid #444;
+  }
+  
+  .editor-controls {
+    margin-bottom: 10px;
+  }
+  
+  .submit-btn {
+    background-color: #007bff;
+    color: white;
+    padding: 8px 16px;
+    font-size: 15px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  
+  .submit-btn:hover {
+    background-color: #0056b3;
+  }
+  
+  @media (max-width: 768px) {
+    .problem-main {
+      flex-direction: column;
+    }
+  
+    .problem-left, .problem-right {
+      flex: none;
+      width: 100%;
+      height: auto;
+    }
+  
+    .problem-right {
+      border-top: 1px solid #ccc;
+    }
+  
+    body.dark .problem-right {
+      border-top: 1px solid #444;
+    }
   }
   

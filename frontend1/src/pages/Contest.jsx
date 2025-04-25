@@ -1,5 +1,5 @@
 // import React, { useEffect, useState } from "react";
-// import { useParams, useNavigate } from "react-router";
+// import { useParams, useNavigate } from "react-router-dom";
 // import { apiUrl } from "../config/config";
 
 // const Contest = () => {
@@ -70,7 +70,7 @@
 // export default Contest;
 
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate } from "react-router-dom";
 import { apiUrl } from "../config/config";
 import "./Contest.css";
 import Navbar from "./Navbar";

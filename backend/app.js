@@ -2,6 +2,8 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const bcrypt = require("bcrypt");
+const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const cors = require("cors");
 const passport = require("passport");
 require("./config/passport");
@@ -250,12 +252,22 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
 
   try {
     const problem = await pool.query(
-      "SELECT title, difficulty, description FROM problems WHERE problem_id = $1",
+      "SELECT title, difficulty, description, examples FROM problems WHERE problem_id = $1",
       [problemId]
     );
 
     if (problem.rows.length === 0) {
       return res.status(404).json({ error: "Problem not found" });
+    }
+
+    let examples = [];
+    if (problem.rows[0].examples) {
+      try {
+        examples = JSON.parse(problem.rows[0].examples);  // Parse the examples JSON string
+      } catch (err) {
+        console.error("Error parsing examples:", err);
+        examples = [{ input: "Error", output: "Unable to parse examples." }];
+      }
     }
 
     const tags = await pool.query(
@@ -274,6 +286,7 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
       description: problem.rows[0].description,
       tags: tags.rows.map((tag) => tag.name),
       submissions: submissions.rows,
+      examples: examples,
     });
   } catch (err) {
     console.error("Error fetching problem:", err);
@@ -620,3 +633,131 @@ app.put(
     }
   }
 );
+
+app.post('/runAllExamples', async (req, res) => {
+  const { problem_id, language, code, examples } = req.body;
+
+  const extensionMap = {
+    cpp: 'cpp',
+    python: 'py',
+    java: 'java',
+  };
+
+  const fileExt = extensionMap[language];
+  const fileName = `temp_code_${Date.now()}.${fileExt}`;
+  const filePath = path.join(__dirname, fileName);
+
+  try {
+    fs.writeFileSync(filePath, code);
+    const results = [];
+
+    const runExample = (example) => {
+      return new Promise((resolve) => {
+        let compileCommand, execCommand, execFile;
+
+        switch (language) {
+          case 'cpp': {
+            const execName = `temp_exec_${Date.now()}`;
+            compileCommand = `g++ ${filePath} -o ${execName}`;
+
+            exec(compileCommand, (compileErr) => {
+              if (compileErr) {
+                console.error('C++ Compilation Error:', compileErr);
+                return resolve(false);
+              }
+
+              const child = spawn(`./${execName}`);
+              let output = '', error = '';
+
+              child.stdin.write(example.input);
+              child.stdin.end();
+
+              child.stdout.on('data', (data) => output += data.toString());
+              child.stderr.on('data', (data) => error += data.toString());
+
+              child.on('close', (code) => {
+                if (error) {
+                  console.error('Runtime Error:', error);
+                  return resolve(false);
+                }
+              
+                const actual = output.trim();
+                const expected = (example.output || '').trim();
+                
+              
+                resolve(actual === expected);
+              });
+              
+            });
+            break;
+          }
+
+          case 'python': {
+            const child = spawn('python3', [filePath]);
+            let output = '', error = '';
+
+            child.stdin.write(example.input);
+            child.stdin.end();
+
+            child.stdout.on('data', (data) => output += data.toString());
+            child.stderr.on('data', (data) => error += data.toString());
+
+            child.on('close', () => {
+              if (error) console.error('Python Runtime Error:', error);
+              resolve(output.trim() === example.output.trim());
+            });
+            break;
+          }
+
+          case 'java': {
+            const className = 'Main'; // Your code must have `public class Main`
+            const javaFilePath = path.join(__dirname, `${className}.java`);
+            fs.writeFileSync(javaFilePath, code);
+
+            exec(`javac ${javaFilePath}`, (compileErr) => {
+              if (compileErr) {
+                console.error('Java Compilation Error:', compileErr);
+                return resolve(false);
+              }
+
+              const child = spawn('java', ['-cp', __dirname, className]);
+              let output = '', error = '';
+
+              child.stdin.write(example.input);
+              child.stdin.end();
+
+              child.stdout.on('data', (data) => output += data.toString());
+              child.stderr.on('data', (data) => error += data.toString());
+
+              child.on('close', () => {
+                if (error) console.error('Java Runtime Error:', error);
+                fs.unlinkSync(javaFilePath);
+                fs.unlinkSync(path.join(__dirname, `${className}.class`));
+                resolve(output.trim() === example.output.trim());
+              });
+            });
+            break;
+          }
+
+          default:
+            resolve(false);
+        }
+      });
+    };
+
+    // Run examples sequentially
+    for (let example of examples) {
+      const passed = await runExample(example);
+      results.push(passed);
+    }
+
+    // Clean up code file
+    fs.unlinkSync(filePath);
+
+    // Send results
+    res.json({ results });
+  } catch (err) {
+    console.error('Error during execution:', err);
+    res.status(500).send('Error executing code');
+  }
+});
