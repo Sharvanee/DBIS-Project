@@ -3,15 +3,12 @@ const bodyParser = require("body-parser");
 const session = require("express-session");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
-// const passport = require("./config/passport"); // Import the configured passport file
 const passport = require("passport");
 require("./config/passport");
-// require("./config/passport"); // Ensure passport is configured
 require("dotenv").config();
 const { Pool } = require("pg");
 const app = express();
 const port = 4000;
-
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -31,7 +28,6 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage });
-
 
 // PostgreSQL connection
 // NOTE: use YOUR postgres username and password here
@@ -72,8 +68,11 @@ app.use(passport.session());
 // Import and use auth routes
 const authRoutes = require("./routes/auth");
 app.use(authRoutes);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+const aiRoutes = require("./routes/ai");
+app.use("/api", aiRoutes);
+// app.use(aiRoutes);
 
 function isAuthenticated(req, res, next) {
   if (!req.session.user) {
@@ -113,7 +112,7 @@ app.post("/signup", async (req, res) => {
        RETURNING id, created_at`,
       [handle, email, hashed_pwd]
     );
-    
+
     const { id: userId, created_at } = insertResult.rows[0];
 
     req.session.user = {
@@ -121,7 +120,7 @@ app.post("/signup", async (req, res) => {
       handle,
       email,
     };
-    
+
     res.status(200).json({
       id: userId,
       handle,
@@ -129,18 +128,18 @@ app.post("/signup", async (req, res) => {
       created_at,
       message: "User Registered Successfully",
     });
-    
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({ message: "Error signing up" });
   }
 });
 
-
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const user = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
     // console.log("user", user.rows);
     if (user.rows.length === 0) {
       return res
@@ -218,11 +217,10 @@ app.get("/problem-set", isAuthenticated, async (req, res) => {
     LEFT JOIN tags t ON t.id = pt.tag_id
     GROUP BY p.problem_id, p.title, p.difficulty`
   );
-  
+
   // console.log("problems", problems.rows);
   res.json(problems.rows);
 });
-
 
 app.get("/problem/:id", isAuthenticated, async (req, res) => {
   const problemId = req.params.id;
@@ -260,7 +258,6 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-
 app.get("/contests", isAuthenticated, async (req, res) => {
   const contests = await pool.query("Select * from contests");
   res.json(contests.rows);
@@ -268,9 +265,10 @@ app.get("/contests", isAuthenticated, async (req, res) => {
 
 app.get("/contest/:id", isAuthenticated, async (req, res) => {
   const contestId = req.params.id;
-  const contest = await pool.query("Select * from contests where contest_id = $1", [
-    contestId,
-  ]);
+  const contest = await pool.query(
+    "Select * from contests where contest_id = $1",
+    [contestId]
+  );
   const problems = await pool.query(
     "Select * from problems where contest_id = $1",
     [contestId]
@@ -337,6 +335,7 @@ app.post("/add-contest", isAuthenticated, async (req, res) => {
         editorial,
         testset_size,
         testcases,
+        model_solution,
       } = problems[i];
       // console.log(problem_id);
       const problemInsertRes = await pool.query(
@@ -344,12 +343,12 @@ app.post("/add-contest", isAuthenticated, async (req, res) => {
           INSERT INTO problems (
             problem_id, contest_id, title, difficulty, time_limit,
             memory_limit, description, input_format, output_format,
-            interaction_format, note, examples, editorial, testset_size, testcases
+            interaction_format, note, examples, editorial, testset_size, testcases, model_solution
           )
           VALUES (
             $1, $2, $3, $4, $5,
             $6, $7, $8, $9,
-            $10, $11, $12, $13, $14, $15
+            $10, $11, $12, $13, $14, $15, $16
           )
           RETURNING problem_id
         `,
@@ -369,6 +368,7 @@ app.post("/add-contest", isAuthenticated, async (req, res) => {
           editorial || "",
           testset_size || null,
           testcases ? JSON.stringify(testcases) : null,
+          model_solution || "",
         ]
       );
 
@@ -422,8 +422,6 @@ app.post("/add-contest", isAuthenticated, async (req, res) => {
   }
 });
 
-
-
 app.get("/profile", isAuthenticated, async (req, res) => {
   const userId = req.session.user.id;
 
@@ -469,7 +467,6 @@ app.get("/profile", isAuthenticated, async (req, res) => {
   }
 });
 
-
 app.get("/submission/:id", isAuthenticated, async (req, res) => {
   const submissionId = req.params.id;
   const submission = await pool.query(
@@ -481,7 +478,6 @@ app.get("/submission/:id", isAuthenticated, async (req, res) => {
   }
   res.json(submission.rows[0]);
 });
-
 
 app.get(
   "/auth/google",
@@ -522,7 +518,8 @@ app.get("/checkHandle", async (req, res) => {
 
 app.post("/submit", isAuthenticated, async (req, res) => {
   try {
-    const user_id = req.session && req.session.user ? req.session.user.id : null;
+    const user_id =
+      req.session && req.session.user ? req.session.user.id : null;
     const { problem_id, code, language } = req.body;
 
     if (!user_id) {
@@ -557,34 +554,38 @@ app.post("/submit", isAuthenticated, async (req, res) => {
   }
 });
 
+app.put(
+  "/update-profile",
+  isAuthenticated,
+  upload.single("profile_pic"),
+  async (req, res) => {
+    const userId = req.session.user.id;
+    const { country, state, city, college, display_name } = req.body;
+    const profile_pic = req.file ? `/uploads/${req.file.filename}` : null;
 
-app.put("/update-profile", isAuthenticated, upload.single("profile_pic"), async (req, res) => {
-  const userId = req.session.user.id;
-  const { country, state, city, college, display_name } = req.body;
-  const profile_pic = req.file ? `/uploads/${req.file.filename}` : null;
+    try {
+      const updateFields = [
+        country,
+        state,
+        city,
+        college,
+        display_name,
+        profile_pic,
+        userId,
+      ];
 
-  try {
-    const updateFields = [
-      country,
-      state,
-      city,
-      college,
-      display_name,
-      profile_pic,
-      userId,
-    ];
-
-    await pool.query(
-      `UPDATE users 
+      await pool.query(
+        `UPDATE users 
        SET country = $1, state = $2, city = $3, college = $4, 
            display_name = $5, profile_pic = COALESCE($6, profile_pic) 
        WHERE id = $7`,
-      updateFields
-    );
+        updateFields
+      );
 
-    // res.status(200).json({ message: "Profile updated successfully" });
-  } catch (err) {
-    console.error("Error updating profile:", err);
-    res.status(500).json({ message: "Failed to update profile" });
+      // res.status(200).json({ message: "Profile updated successfully" });
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
   }
-});
+);

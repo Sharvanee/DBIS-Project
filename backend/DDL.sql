@@ -10,13 +10,15 @@ CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   handle VARCHAR(50) UNIQUE NOT NULL,
   email VARCHAR(100) UNIQUE NOT NULL,
-  name VARCHAR(100),
-  city VARCHAR(100),
-  country VARCHAR(100),
-  institution VARCHAR(100),
   password_hash TEXT NOT NULL,
   rating INTEGER DEFAULT 1500,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  display_name TEXT,
+  city TEXT,
+  college TEXT,
+  profile_pic TEXT,
+  country TEXT,
+  state TEXT
 );
 
 CREATE TABLE contests (
@@ -47,7 +49,8 @@ CREATE TABLE problems (
   examples TEXT,
   editorial TEXT,
   testset_size INTEGER,
-  testcases JSONB
+  testcases JSONB,
+  model_solution TEXT
 );
 
 CREATE TABLE solved_problems (
