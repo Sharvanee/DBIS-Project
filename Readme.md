@@ -11,6 +11,7 @@ The following needs to be installed:
     - nvm use --lts
 - In the frontend1 directory, run the command:
     - npm install react-router
+    - npm install @monaco-editor/react
 
 ---
 
