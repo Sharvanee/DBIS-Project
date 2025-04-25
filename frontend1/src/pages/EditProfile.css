@@ -1,0 +1,70 @@
+.edit-profile-container {
+  max-width: 600px;
+  margin: 60px auto;
+  padding: 30px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.edit-profile-container h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  font-size: 28px;
+  color: #333;
+}
+
+.edit-profile-form .form-group {
+  margin-bottom: 20px;
+}
+
+.edit-profile-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #444;
+}
+
+.edit-profile-form input[type="text"],
+.edit-profile-form select,
+.edit-profile-form input[type="file"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+}
+
+.edit-profile-form input[type="text"]:focus,
+.edit-profile-form select:focus {
+  border-color: #4a90e2;
+  outline: none;
+}
+
+.preview-pic {
+  margin-top: 12px;
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid #ddd;
+}
+
+.btn {
+  width: 100%;
+  background-color: #4a90e2;
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+  background-color: #3a78c2;
+}

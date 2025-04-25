@@ -3,14 +3,31 @@ const bodyParser = require("body-parser");
 const session = require("express-session");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
-// const passport = require("./config/passport"); // Import the configured passport file
 const passport = require("passport");
 require("./config/passport");
-// require("./config/passport"); // Ensure passport is configured
 require("dotenv").config();
 const { Pool } = require("pg");
 const app = express();
 const port = 4000;
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+// Setup for file uploads (profile pictures)
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, "uploads");
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath);
+    }
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${file.fieldname}${ext}`);
+  },
+});
+const upload = multer({ storage });
 
 // PostgreSQL connection
 // NOTE: use YOUR postgres username and password here
@@ -56,30 +73,19 @@ app.use(passport.session());
 // Import and use auth routes
 const authRoutes = require("./routes/auth");
 app.use(authRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-/////////////////////////////////////////////////////////////
-// Authentication APIs
-// Signup, Login, IsLoggedIn and Logout
-
-// TODO: Implement authentication middleware
-// Redirect unauthenticated users to the login page with respective status code
-// function isAuthenticated(req, res, next) {
-//   if (!req.session.user) {
-//     return res.status(400).json({ message: "Unauthorized" });
-//   }
-//   next();
-// }
+const aiRoutes = require("./routes/ai");
+app.use("/api", aiRoutes);
+// app.use(aiRoutes);
 
 function isAuthenticated(req, res, next) {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Unauthorized" });
+  if (!req.session.user) {
+    return res.status(400).json({ message: "Unauthorized" });
   }
   next();
 }
 
-// TODO: Implement user signup logic
-// return JSON object with the following fields: {username, email, password}
-// use correct status codes and messages mentioned in the lab document
 app.post("/signup", async (req, res) => {
   try {
     const { handle, email, password } = req.body;
@@ -127,16 +133,12 @@ app.post("/signup", async (req, res) => {
       created_at,
       message: "User Registered Successfully",
     });
-
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({ message: "Error signing up" });
   }
 });
 
-// TODO: Implement user signup logic
-// return JSON object with the following fields: {email, password}
-// use correct status codes and messages mentioned in the lab document
 app.post("/login", async (req, res) => {
   try {
     const { email, password, rememberMe } = req.body;
@@ -226,7 +228,7 @@ app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
 
-app.get("/problem-set", async (req, res) => {
+app.get("/problem-set", isAuthenticated, async (req, res) => {
   const problems = await pool.query(
     `SELECT 
       p.problem_id, 
@@ -239,12 +241,11 @@ app.get("/problem-set", async (req, res) => {
     GROUP BY p.problem_id, p.title, p.difficulty`
   );
 
-  console.log("problems", problems.rows);
+  // console.log("problems", problems.rows);
   res.json(problems.rows);
 });
 
-
-app.get("/problem/:id", async (req, res) => {
+app.get("/problem/:id", isAuthenticated, async (req, res) => {
   const problemId = req.params.id;
 
   try {
@@ -280,17 +281,17 @@ app.get("/problem/:id", async (req, res) => {
   }
 });
 
-
-app.get("/contests", async (req, res) => {
+app.get("/contests", isAuthenticated, async (req, res) => {
   const contests = await pool.query("Select * from contests");
   res.json(contests.rows);
 });
 
-app.get("/contest/:id", async (req, res) => {
+app.get("/contest/:id", isAuthenticated, async (req, res) => {
   const contestId = req.params.id;
-  const contest = await pool.query("Select * from contests where contest_id = $1", [
-    contestId,
-  ]);
+  const contest = await pool.query(
+    "Select * from contests where contest_id = $1",
+    [contestId]
+  );
   const problems = await pool.query(
     "Select * from problems where contest_id = $1",
     [contestId]
@@ -311,7 +312,7 @@ app.get("/contest/:id", async (req, res) => {
   });
 });
 
-app.post("/add-contest", async (req, res) => {
+app.post("/add-contest", isAuthenticated, async (req, res) => {
   try {
     const { title, start_time, duration_minutes, problems } = req.body;
 
@@ -357,19 +358,20 @@ app.post("/add-contest", async (req, res) => {
         editorial,
         testset_size,
         testcases,
+        model_solution,
       } = problems[i];
-      console.log(problem_id);
+      // console.log(problem_id);
       const problemInsertRes = await pool.query(
         `
           INSERT INTO problems (
             problem_id, contest_id, title, difficulty, time_limit,
             memory_limit, description, input_format, output_format,
-            interaction_format, note, examples, editorial, testset_size, testcases
+            interaction_format, note, examples, editorial, testset_size, testcases, model_solution
           )
           VALUES (
             $1, $2, $3, $4, $5,
             $6, $7, $8, $9,
-            $10, $11, $12, $13, $14, $15
+            $10, $11, $12, $13, $14, $15, $16
           )
           RETURNING problem_id
         `,
@@ -389,6 +391,7 @@ app.post("/add-contest", async (req, res) => {
           editorial || "",
           testset_size || null,
           testcases ? JSON.stringify(testcases) : null,
+          model_solution || "",
         ]
       );
 
@@ -442,13 +445,7 @@ app.post("/add-contest", async (req, res) => {
   }
 });
 
-
-
-app.get("/profile", async (req, res) => {
-  if (!req.session.user) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
+app.get("/profile", isAuthenticated, async (req, res) => {
   const userId = req.session.user.id;
 
   try {
@@ -456,6 +453,12 @@ app.get("/profile", async (req, res) => {
       `SELECT 
         u.handle, 
         u.email, 
+        u.display_name,
+        u.country,
+        u.state,
+        u.city,
+        u.college,
+        u.profile_pic,
         u.rating, 
         u.created_at,
         COALESCE(ps.solved_count, 0) AS solved_count, 
@@ -487,7 +490,7 @@ app.get("/profile", async (req, res) => {
   }
 });
 
-app.get("/submission/:id", async (req, res) => {
+app.get("/submission/:id", isAuthenticated, async (req, res) => {
   const submissionId = req.params.id;
   const submission = await pool.query(
     "Select * from submissions where id = $1",
@@ -544,9 +547,10 @@ app.get("/checkHandle", async (req, res) => {
   }
 });
 
-app.post("/submit", async (req, res) => {
+app.post("/submit", isAuthenticated, async (req, res) => {
   try {
-    const user_id = req.session && req.session.user ? req.session.user.id : null;
+    const user_id =
+      req.session && req.session.user ? req.session.user.id : null;
     const { problem_id, code, language } = req.body;
 
     if (!user_id) {
@@ -580,3 +584,39 @@ app.post("/submit", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+app.put(
+  "/update-profile",
+  isAuthenticated,
+  upload.single("profile_pic"),
+  async (req, res) => {
+    const userId = req.session.user.id;
+    const { country, state, city, college, display_name } = req.body;
+    const profile_pic = req.file ? `/uploads/${req.file.filename}` : null;
+
+    try {
+      const updateFields = [
+        country,
+        state,
+        city,
+        college,
+        display_name,
+        profile_pic,
+        userId,
+      ];
+
+      await pool.query(
+        `UPDATE users 
+       SET country = $1, state = $2, city = $3, college = $4, 
+           display_name = $5, profile_pic = COALESCE($6, profile_pic) 
+       WHERE id = $7`,
+        updateFields
+      );
+
+      // res.status(200).json({ message: "Profile updated successfully" });
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  }
+);

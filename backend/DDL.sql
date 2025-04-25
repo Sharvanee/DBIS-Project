@@ -13,8 +13,13 @@ CREATE TABLE users (
   password_hash TEXT,
   google_id TEXT UNIQUE,
   rating INTEGER DEFAULT 1500,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  CHECK (password_hash IS NOT NULL OR google_id IS NOT NULL)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  display_name TEXT,
+  city TEXT,
+  college TEXT,
+  profile_pic TEXT,
+  country TEXT,
+  state TEXT
 );
 
 
@@ -46,7 +51,8 @@ CREATE TABLE problems (
   examples TEXT,
   editorial TEXT,
   testset_size INTEGER,
-  testcases JSONB
+  testcases JSONB,
+  model_solution TEXT
 );
 
 CREATE TABLE solved_problems (
