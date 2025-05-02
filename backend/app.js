@@ -81,161 +81,6 @@ function isAuthenticated(req, res, next) {
   next();
 }
 
-// Register or deregister for a contest
-app.post("/contest/:id/register", isAuthenticated, async (req, res) => {
-  const userId = req.session.user.id;
-  const contestId = req.params.id;
-
-  try {
-    // Check if the user is already registered
-    const result = await pool.query(
-      `SELECT * FROM contest_registrations WHERE user_id = $1 AND contest_id = $2`,
-      [userId, contestId]
-    );
-
-    if (result.rows.length > 0) {
-      // User is already registered, so let's deregister them
-      await pool.query(
-        `DELETE FROM contest_registrations WHERE user_id = $1 AND contest_id = $2`,
-        [userId, contestId]
-      );
-      return res.json({ success: true, action: "deregistered" });
-    }
-
-    // User is not registered, so register them
-    await pool.query(
-      `INSERT INTO contest_registrations (user_id, contest_id)
-       VALUES ($1, $2)
-       ON CONFLICT (user_id, contest_id) DO NOTHING`,
-      [userId, contestId]
-    );
-    res.json({ success: true, action: "registered" });
-  } catch (err) {
-    console.error("Contest registration error:", err);
-    res.status(500).json({ error: "Failed to register or deregister" });
-  }
-});
-
-// Route: GET /contest/:id/isRegistered
-app.get("/contest/:id/isRegistered", isAuthenticated, async (req, res) => {
-  try {
-    const userId = req.session.user.id;
-    const contestId = req.params.id;
-
-    if (!userId) return res.status(401).json({ isRegistered: false });
-
-    const result = await pool.query(
-      `SELECT 1 FROM contest_registrations WHERE user_id = $1 AND contest_id = $2`,
-      [userId, contestId]
-    );
-
-    const isRegistered = result.rowCount > 0;
-    res.json({ isRegistered });
-  } catch (err) {
-    console.error("Error checking registration:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Get all contest registrations for the logged-in user
-app.get("/myRegistrations", isAuthenticated, async (req, res) => {
-  const userId = req.session.user.id;
-
-  try {
-    const result = await pool.query(
-      `SELECT contest_id FROM contest_registrations WHERE user_id = $1`,
-      [userId]
-    );
-
-    res.json(result.rows); // returns an array of { contest_id }
-  } catch (err) {
-    console.error("Error fetching registrations:", err);
-    res.status(500).json({ error: "Failed to fetch registrations" });
-  }
-});
-
-app.get("/contest/:id", isAuthenticated, async (req, res) => {
-  const contestId = req.params.id;
-  const contest = await pool.query(
-    "Select * from contests where contest_id = $1",
-    [contestId]
-  );
-  const problems = await pool.query(
-    "Select * from problems where contest_id = $1",
-    [contestId]
-  );
-
-  if (contest.rows.length === 0) {
-    return res.status(404).json({ message: "Contest not found" });
-  }
-
-  res.json({
-    title: contest.rows[0].title,
-    start_time: contest.rows[0].start_time,
-    duration: contest.rows[0].duration,
-    problems: problems.rows.map((problem) => ({
-      id: problem.problem_id,
-      title: problem.title,
-      difficulty: problem.difficulty,
-    })),
-  });
-});
-
-app.get("/contest/:id/stats", isAuthenticated, async (req, res) => {
-  const contestId = req.params.id;
-
-  try {
-    // ✅ Problem-level stats
-    const problemStatsQuery = await pool.query(
-      `
-      SELECT 
-        p.problem_id,
-        COUNT(s.id) AS total_submissions,
-        COUNT(CASE WHEN s.verdict = 'Accepted' THEN 1 END) AS accepted_submissions
-      FROM problems p
-      LEFT JOIN submissions s ON p.problem_id = s.problem_id
-      WHERE p.contest_id = $1
-      GROUP BY p.problem_id
-      `,
-      [contestId]
-    );
-
-    const problemStats = {};
-    problemStatsQuery.rows.forEach((row) => {
-      problemStats[row.problem_id] = {
-        total_submissions: parseInt(row.total_submissions),
-        accepted_submissions: parseInt(row.accepted_submissions),
-      };
-    });
-
-    // ✅ User-level leaderboard including all registered users
-    const leaderboardQuery = await pool.query(
-      `
-      SELECT
-        r.user_id,
-        u.handle,
-        COUNT(DISTINCT CASE WHEN s.verdict = 'Accepted' THEN s.problem_id END) AS solved_count,
-        MIN(CASE WHEN s.verdict = 'Accepted' THEN s.created_at END) AS first_solved_at
-      FROM contest_registrations r
-      INNER JOIN users u ON u.id = r.user_id
-      LEFT JOIN submissions s ON s.user_id = r.user_id
-        AND s.problem_id IN (SELECT problem_id FROM problems WHERE contest_id = $1)
-      WHERE r.contest_id = $1
-      GROUP BY r.user_id, u.handle
-      ORDER BY solved_count DESC, first_solved_at ASC NULLS LAST
-      `,
-      [contestId]
-    );
-
-    res.json({
-      problemStats,
-      userLeaderboard: leaderboardQuery.rows,
-    });
-  } catch (err) {
-    console.error("Error fetching contest stats:", err);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
 
 app.get("/blogs", isAuthenticated, async (req, res) => {
   try {
@@ -416,7 +261,7 @@ app.get("/blogs/:id", isAuthenticated, async (req, res) => {
 app.post("/signup", async (req, res) => {
   try {
     const { handle, email, password } = req.body;
-
+    
     const email_in_use = await pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
@@ -435,10 +280,10 @@ app.post("/signup", async (req, res) => {
       return res
         .status(400)
         .json({ message: "Error: Username is already registered." });
-    }
+      }
 
-    const hashed_pwd = await bcrypt.hash(password, 10);
-    const insertResult = await pool.query(
+      const hashed_pwd = await bcrypt.hash(password, 10);
+      const insertResult = await pool.query(
       `INSERT INTO users (handle, email, password_hash, created_at) 
        VALUES ($1, $2, $3, CURRENT_TIMESTAMP) 
        RETURNING id, created_at`,
@@ -468,30 +313,22 @@ app.post("/signup", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
-    const { email, password, rememberMe } = req.body;
-    const userQuery = await pool.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
+    const { handle, password, rememberMe } = req.body;
+
+    const userQuery = await pool.query("SELECT * FROM users WHERE handle = $1", [handle]);
 
     if (userQuery.rows.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid credentials" });
+      return res.status(400).json({ success: false, message: "Invalid handle or password" });
     }
 
     const user = userQuery.rows[0];
     const correct_pwd = await bcrypt.compare(password, user.password_hash);
     if (!correct_pwd) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid credentials" });
+      return res.status(400).json({ success: false, message: "Invalid handle or password" });
     }
 
-    if (rememberMe) {
-      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
-    } else {
-      req.session.cookie.expires = false;
-    }
+    if (rememberMe) req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+    else req.session.cookie.expires = false;
 
     req.session.user = {
       id: user.id,
@@ -506,15 +343,89 @@ app.post("/login", async (req, res) => {
   }
 });
 
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+app.post("/auth/google", async (req, res) => {
+  try {
+    const { token } = req.body;
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const email = payload.email;
+    const handle = email.split("@")[0]; // fallback if handle isn't provided
+
+    let user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+
+    if (user.rows.length === 0) {
+      // Create user
+      const result = await pool.query(
+        `INSERT INTO users (handle, email, created_at) VALUES ($1, $2, CURRENT_TIMESTAMP) RETURNING *`,
+        [handle, email]
+      );
+      user = result;
+    }
+
+    const { id, handle: userHandle } = user.rows[0];
+    req.session.user = { id, handle: userHandle, email };
+
+    return res.status(200).json({ message: "Google login successful" });
+  } catch (err) {
+    console.error("Google login failed:", err);
+    res.status(400).json({ message: "Google authentication failed" });
+  }
+});
+
+
+
 app.get("/isLoggedIn", async (req, res) => {
   if (req.session.user) {
     return res
-      .status(200)
-      .json({ message: "Logged in", handle: req.session.user.handle });
+    .status(200)
+    .json({ message: "Logged in", handle: req.session.user.handle });
   } else {
     return res.status(400).json({ message: "Not logged in" });
   }
 });
+
+app.post("/reset-password", async (req, res) => {
+  const { token, newPassword } = req.body;
+  try {
+    const userResult = await pool.query("SELECT * FROM users WHERE reset_token = $1 AND reset_expires > NOW()", [token]);
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await pool.query("UPDATE users SET password_hash = $1, reset_token = NULL, reset_expires = NULL WHERE id = $2", [hashed, userResult.rows[0].id]);
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ message: "Error resetting password" });
+  }
+});
+
+app.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  const token = require('crypto').randomBytes(32).toString("hex");
+
+  try {
+    await pool.query("UPDATE users SET reset_token = $1, reset_expires = NOW() + INTERVAL '1 hour' WHERE email = $2", [token, email]);
+
+    // TODO: Email the token as reset link: http://localhost:3000/reset-password?token=...
+    console.log(`Reset link: http://localhost:3000/reset-password?token=${token}`);
+    res.status(200).json({ message: "Password reset link has been sent." });
+  } catch (err) {
+    console.error("Error sending reset link:", err);
+    res.status(500).json({ message: "Error processing request" });
+  }
+});
+
+
 
 app.post("/logout", (req, res) => {
   req.session.destroy((err) => {
@@ -553,17 +464,17 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
   try {
     const problem = await pool.query(
       `SELECT p.title, p.difficulty, p.description, p.examples,
-              c.start_time AS contest_start_time, c.duration AS contest_duration
+      c.start_time AS contest_start_time, c.duration AS contest_duration
        FROM problems p
        LEFT JOIN contests c ON p.contest_id = c.contest_id
        WHERE p.problem_id = $1`,
       [problemId]
     );
-
+    
     if (problem.rows.length === 0) {
       return res.status(404).json({ error: "Problem not found" });
     }
-
+    
     let examples = [];
     if (problem.rows[0].examples) {
       try {
@@ -600,6 +511,145 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
   } catch (err) {
     console.error("Error fetching problem:", err);
     res.status(500).json({ error: "Internal server error" });
+  }
+
+});
+
+// Register or deregister for a contest
+app.post("/contest/:id/register", isAuthenticated, async (req, res) => {
+  const userId = req.session.user.id;
+  const contestId = req.params.id;
+
+  try {
+    // Check if the user is already registered
+    const result = await pool.query(
+      `SELECT * FROM contest_registrations WHERE user_id = $1 AND contest_id = $2`,
+      [userId, contestId]
+    );
+
+    if (result.rows.length > 0) {
+      // User is already registered, so let's deregister them
+      await pool.query(
+        `DELETE FROM contest_registrations WHERE user_id = $1 AND contest_id = $2`,
+        [userId, contestId]
+      );
+      return res.json({ success: true, action: "deregistered" });
+    }
+
+    // User is not registered, so register them
+    await pool.query(
+      `INSERT INTO contest_registrations (user_id, contest_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, contest_id) DO NOTHING`,
+      [userId, contestId]
+    );
+    res.json({ success: true, action: "registered" });
+  } catch (err) {
+    console.error("Contest registration error:", err);
+    res.status(500).json({ error: "Failed to register or deregister" });
+  }
+});
+
+// Get all contest registrations for the logged-in user
+app.get("/myRegistrations", isAuthenticated, async (req, res) => {
+  const userId = req.session.user.id;
+
+  try {
+    const result = await pool.query(
+      `SELECT contest_id FROM contest_registrations WHERE user_id = $1`,
+      [userId]
+    );
+
+    res.json(result.rows); // returns an array of { contest_id }
+  } catch (err) {
+    console.error("Error fetching registrations:", err);
+    res.status(500).json({ error: "Failed to fetch registrations" });
+  }
+});
+
+
+
+app.get("/contest/:id", isAuthenticated, async (req, res) => {
+  const contestId = req.params.id;
+  const contest = await pool.query(
+    "Select * from contests where contest_id = $1",
+    [contestId]
+  );
+  const problems = await pool.query(
+    "Select * from problems where contest_id = $1",
+    [contestId]
+  );
+
+  if (contest.rows.length === 0) {
+    return res.status(404).json({ message: "Contest not found" });
+  }
+
+  res.json({
+    title: contest.rows[0].title,
+    start_time: contest.rows[0].start_time,
+    duration: contest.rows[0].duration,
+    problems: problems.rows.map((problem) => ({
+      id: problem.problem_id,
+      title: problem.title,
+      difficulty: problem.difficulty,
+    })),
+  });
+});
+
+app.get("/contest/:id/stats", isAuthenticated, async (req, res) => {
+  const contestId = req.params.id;
+
+  try {
+    // Problem-level stats
+    const problemStatsQuery = await pool.query(
+      `
+      SELECT 
+        p.problem_id,
+        COUNT(s.id) AS total_submissions,
+        COUNT(CASE WHEN s.verdict = 'Accepted' THEN 1 END) AS accepted_submissions
+      FROM problems p
+      LEFT JOIN submissions s ON p.problem_id = s.problem_id
+      WHERE p.contest_id = $1
+      GROUP BY p.problem_id
+      `,
+      [contestId]
+    );
+
+    const problemStats = {};
+    problemStatsQuery.rows.forEach(row => {
+      problemStats[row.problem_id] = {
+        total_submissions: parseInt(row.total_submissions),
+        accepted_submissions: parseInt(row.accepted_submissions)
+      };
+    });
+
+    // User-level leaderboard
+    const leaderboardQuery = await pool.query(
+      `
+      SELECT
+        s.user_id,
+        u.handle,
+        COUNT(DISTINCT s.problem_id) AS solved_count,
+        MIN(s.created_at) AS first_solved_at
+      FROM submissions s
+      INNER JOIN problems p ON p.problem_id = s.problem_id
+      INNER JOIN users u ON u.id = s.user_id
+      WHERE p.contest_id = $1 AND s.verdict = 'Accepted'
+      GROUP BY s.user_id, u.handle
+      ORDER BY solved_count DESC, first_solved_at ASC
+      `,
+      [contestId]
+    );
+    
+
+    res.json({
+      problemStats,
+      userLeaderboard: leaderboardQuery.rows
+    });
+
+  } catch (err) {
+    console.error("Error fetching contest stats:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 

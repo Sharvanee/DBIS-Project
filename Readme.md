@@ -9,7 +9,9 @@ The following needs to be installed:
     - npm install bcrypt express pg express-session body-parser cors ajv multer @google/generative-ai
     - nvm install --lts
     - nvm use --lts
+    - npm install google-auth-library
 - In the frontend1 directory, run the command:
+    - npm install lucide-react
     - npm install react-router @monaco-editor/react date-fns react-calendar-heatmap react-github-calendar
 
 ---

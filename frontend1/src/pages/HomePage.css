@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Roboto:wght@300;500;700&display=swap');
+
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif;
+    height: 100%;
+    background-color: #f9f9f9;
+}
+
+.homepage {
+    height: 100vh;
+    width: 100%;
+    background-image: linear-gradient(#e8e8e8 1px, transparent 1px), 
+                                        linear-gradient(90deg, #e8e8e8 1px, transparent 1px);
+    background-size: 40px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4rem 2rem;
+    padding-top: 10rem; /* Add gap at the top */
+    box-sizing: border-box;
+}
+
+.site-logo {
+    height: 450px;
+    width: auto;
+}
+
+.main-heading {
+    font-size: 5rem;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    color: white;
+    margin: 0;
+    text-align: center;
+    max-width: 900px;
+    background-color: #1a1a1a; /* Darker shade of black */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 450px; /* Same height as the logo */
+    padding: 0 2rem;
+    box-sizing: border-box;
+}
+
+.top-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0; /* Remove gap */
+    flex-wrap: nowrap; /* Ensure no wrapping */
+    height: 40%;
+}
+
+.bottom-section {
+    text-align: center;
+    padding: 1rem;
+}
+
+.sub-heading {
+    font-family: 'Roboto', sans-serif;
+    font-size: 4.5rem; /* Increased font size */
+    font-weight: 700;
+    color: #3b82f6;
+    margin-bottom: 0.5em; /* Reduced margin to move it up */
+}
+
+.description {
+    font-size: 2rem; /* Increased font size */
+    color: #555555;
+    margin-bottom: 1.5rem; /* Reduced margin to move it up */
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1.2rem; /* Increased gap between buttons */
+    flex-wrap: wrap;
+}
+
+.sign-in, .explore {
+    font-size: 1.1rem; /* Increased font size */
+    font-weight: 500;
+    padding: 1rem 2.2rem; /* Increased padding for larger buttons */
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.sign-in {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.sign-in:hover {
+    background-color: #2563eb;
+}
+
+.explore {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.explore:hover {
+    background-color: #2563eb;
+}
