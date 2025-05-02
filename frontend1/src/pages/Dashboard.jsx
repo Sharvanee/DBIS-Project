@@ -108,7 +108,7 @@ const Dashboard = () => {
       <div className="dashboard-container">
         <div className="dashboard-content">
           <h1 className="dashboard-title">Hi, {username} 👋</h1>
-          <p className="dashboard-subtitle">Welcome to the Contest Platform!</p>
+          <p className="dashboard-subtitle">Welcome to CodeQuest!</p>
           <p className="dashboard-description">
             Jump into contests, solve problems, and climb the leaderboard 🏆
           </p>
@@ -116,13 +116,14 @@ const Dashboard = () => {
           <div className="dashboard-section">
             <h2>Problem Categories</h2>
             <div className="categories-list">
-              {categories.map((tag) => (
-                <div key={tag} className="category-card">
-                  <Link to={`/tags/${tag}`} className="category-link">
-                    {tag}
-                  </Link>
-                </div>
-              ))}
+            {categories.map((tag) => (
+  <div key={tag} className="category-card">
+    <Link to={`/problem-set?tag=${encodeURIComponent(tag)}`} className="category-link">
+      {tag}
+    </Link>
+  </div>
+))}
+
             </div>
           </div>
 
