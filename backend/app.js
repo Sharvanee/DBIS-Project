@@ -540,13 +540,14 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
 
   try {
     const problem = await pool.query(
-      `SELECT p.title, p.difficulty, p.description, p.examples,
-      c.start_time AS contest_start_time, c.duration AS contest_duration
+      `SELECT p.title, p.difficulty, p.description, p.examples, p.model_solution,
+       c.start_time AS contest_start_time, c.duration AS contest_duration
        FROM problems p
        LEFT JOIN contests c ON p.contest_id = c.contest_id
        WHERE p.problem_id = $1`,
       [problemId]
     );
+    
 
     if (problem.rows.length === 0) {
       return res.status(404).json({ error: "Problem not found" });
@@ -584,7 +585,9 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
       examples: examples,
       contest_start_time: problem.rows[0].contest_start_time,
       contest_duration: problem.rows[0].contest_duration,
+      model_solution: problem.rows[0].model_solution,
     });
+    
   } catch (err) {
     console.error("Error fetching problem:", err);
     res.status(500).json({ error: "Internal server error" });

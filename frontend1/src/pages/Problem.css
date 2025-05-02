@@ -123,3 +123,35 @@
     }
   }
   
+  .locked-message {
+    padding: 30px;
+    text-align: center;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .locked-message h2 {
+    font-size: 2rem;
+    color: #e74c3c;
+    font-weight: bold;
+  }
+  
+  .locked-message p {
+    font-size: 1.1rem;
+    color: #555;
+  }
+  
+  .locked-message strong {
+    color: #2ecc71;
+  }
+  
+  .locked-message .note {
+    margin-top: 15px;
+    font-size: 1rem;
+    color: #888;
+    font-style: italic;
+  }
+  

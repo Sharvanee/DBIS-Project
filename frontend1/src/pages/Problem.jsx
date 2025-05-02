@@ -4,6 +4,7 @@ import { apiUrl } from "../config/config";
 import Navbar from "./Navbar";
 import "./Problem.css";
 import Editor from "@monaco-editor/react";
+import { set } from "date-fns";
 
 const Problem = () => {
   const { id } = useParams();
@@ -16,6 +17,9 @@ const Problem = () => {
   const [uploadMode, setUploadMode] = useState("text");
   const [contestEndTime, setContestEndTime] = useState(null);
   const [countdown, setCountdown] = useState("");
+  const [showSolution, setShowSolution] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [isProblemLocked, setIsProblemLocked] = useState(false);
 
   // Theme effect
   useEffect(() => {
@@ -66,9 +70,22 @@ const Problem = () => {
         setProblem(data);
 
         if (data.contest_start_time && data.contest_duration) {
-          const end = new Date(new Date(data.contest_start_time).getTime() + data.contest_duration * 60000);
+          const start = new Date(data.contest_start_time);
+          const end = new Date(start.getTime() + data.contest_duration * 60000);
           setContestEndTime(end);
+        
+          const now = new Date();
+        
+          if (now < start) {
+            // Contest hasn't started yet — lock the whole problem
+            setIsProblemLocked(true);
+            setIsLocked(true);
+          } else {
+            // Contest has started; optionally lock model solution if contest is still ongoing
+            setIsLocked(now < end);
+          }
         }
+        
 
       } catch (err) {
         console.error("Fetch error:", err);
@@ -81,7 +98,6 @@ const Problem = () => {
     fetchProblem();
   }, [id, navigate]);
 
-  // Countdown timer effect
   useEffect(() => {
     if (!contestEndTime) return;
 
@@ -92,10 +108,16 @@ const Problem = () => {
       const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
       const seconds = String(diff % 60).padStart(2, "0");
       setCountdown(`${hours}:${minutes}:${seconds}`);
+
+      // Lock model solution if contest is over
+      if (diff === 0 && isLocked) {
+        setIsLocked(false);
+      }
+
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [contestEndTime]);
+  }, [contestEndTime, isLocked]);
 
   const handleSubmit = async () => {
     try {
@@ -164,16 +186,35 @@ const Problem = () => {
   if (loading) return <p>Loading...</p>;
   if (!problem) return <p>Problem not found.</p>;
 
+  if (isProblemLocked) {
+    return (
+      <div className="problem-page">
+        <Navbar />
+        <div className="problem-main">
+          <div className="locked-message">
+            <h2>This problem is currently locked.</h2>
+            <p>
+              It is part of an upcoming contest and will become available on{" "}
+              <strong>{new Date(problem.contest_start_time).toLocaleString()}</strong>.
+            </p>
+            <p className="note">Please check back after the contest starts!</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  
+
   return (
     <div className="problem-page">
       <Navbar />
-      {countdown && (
-        <div style={{ textAlign: "center", color:"red", fontSize: "1.2rem", fontWeight: "bold", margin: "10px 0" }}>
+      {countdown && new Date() < contestEndTime && (
+        <div style={{ textAlign: "center", color: "red", fontSize: "1.2rem", fontWeight: "bold", margin: "10px 0" }}>
           Contest ends in: {countdown}
         </div>
       )}
       <div className="problem-main">
-        {/* Left side */}
         <div className="problem-left">
           <h1>{problem.title}</h1>
           <p><strong>Difficulty:</strong> {problem.difficulty}</p>
@@ -182,6 +223,7 @@ const Problem = () => {
           <div className="problem-description">
             <p>{problem.description}</p>
           </div>
+
           {problem.examples && problem.examples.length > 0 ? (
             <div className="problem-examples">
               <h3>Examples:</h3>
@@ -230,9 +272,38 @@ const Problem = () => {
               </tbody>
             </table>
           </div>
+
+          <div className="model-solution-block" style={{ marginTop: "20px" }}>
+            <button
+              onClick={() => setShowSolution(!showSolution)}
+              style={{ marginBottom: "10px" }}
+              disabled={isLocked}
+              title={isLocked ? "Model solution will be available once the contest ends." : ""}
+            >
+              {showSolution ? "Hide Solution" : "Reveal Solution"}
+            </button>
+            {showSolution && !isLocked && (
+              <div className="solution-content" style={{
+                backgroundColor: "#f8f8f8",
+                padding: "10px",
+                borderRadius: "6px",
+                whiteSpace: "pre-wrap"
+              }}>
+                {problem.model_solution ? (
+                  <code>{problem.model_solution}</code>
+                ) : (
+                  <p>No model solution available.</p>
+                )}
+              </div>
+            )}
+            {isLocked && (
+              <div style={{ color: "gray", fontStyle: "italic" }}>
+                Model solution will be available once the contest ends.
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Right side */}
         <div className="problem-right">
           <div className="editor-controls">
             <select value={language} onChange={(e) => setLanguage(e.target.value)}>
@@ -293,10 +364,7 @@ const Problem = () => {
           )}
 
           <div style={{ marginTop: "10px" }}>
-            <button
-              onClick={handleRunAllExamples}
-              style={{ marginTop: "10px", marginRight: "10px" }}
-            >
+            <button onClick={handleRunAllExamples} style={{ marginRight: "10px" }}>
               Run All Examples
             </button>
             <button className="submit-btn" onClick={handleSubmit}>Submit</button>

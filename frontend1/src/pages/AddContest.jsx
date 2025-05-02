@@ -93,10 +93,12 @@ const AddContest = () => {
         try {
           return JSON.parse(p.testcases || "{}");
         } catch {
-          return {}; // fallback on invalid JSON
+          return {};
         }
       })(),
+      model_solution: p.model_solution || "",  // <- ensure it's retained
     }));
+    
 
     const submissionData = { ...formData, problems: parsedProblems };
 
