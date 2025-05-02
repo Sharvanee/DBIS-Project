@@ -1,34 +1,118 @@
 .dashboard-container {
-    min-height: 100vh;
-    background-color: #f8f9fa;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-  
-  .dashboard-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin-top: 80px;
-    padding: 0 20px;
-    text-align: center;
-  }
-  
-  .dashboard-title {
-    font-size: 36px;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 10px;
-  }
-  
-  .dashboard-subtitle {
-    font-size: 20px;
-    color: #555;
-    margin-bottom: 5px;
-  }
-  
-  .dashboard-description {
-    font-size: 14px;
-    color: #777;
-  }
-  
+  padding: 20px;
+}
+
+.dashboard-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.dashboard-title {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-subtitle {
+  font-size: 1.5rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.dashboard-description {
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.dashboard-section {
+  margin-bottom: 2rem;
+}
+
+.categories-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.category-card {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s;
+  text-align: center;
+}
+
+.category-card:hover {
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.category-link {
+  font-size: 1.1rem;
+  color: #333;
+  text-decoration: none;
+}
+
+.category-link:hover {
+  color: #007bff;
+}
+
+.contests-list, .blogs-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.contest-card, .blog-card {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s;
+}
+
+.contest-card:hover, .blog-card:hover {
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.contest-card h3, .blog-card h3, .category-card h3 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.contest-card p, .blog-card p, .category-card p {
+  font-size: 1rem;
+  color: #555;
+}
+
+.contest-card span {
+  display: block;
+  margin-top: 10px;
+  padding: 5px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.blog-author {
+  font-size: 0.9rem;
+  color: #777;
+  margin-top: 0.5rem;
+}
+
+.contest-card.active {
+  background-color: #d4edda; /* Green for active */
+}
+
+.contest-card.upcoming {
+  background-color: #fff3cd; /* Yellow for upcoming */
+}
+
+.contest-card.past {
+  background-color: #f8d7da; /* Red for past */
+}
+
+.contest-card h3, .contest-card span {
+  color: #333;
+}
