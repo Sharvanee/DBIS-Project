@@ -98,27 +98,27 @@ app.get("/blogs", isAuthenticated, async (req, res) => {
   }
 });
 
-app.get("/blogs/:id", isAuthenticated, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query(
-      `
-      SELECT b.id, b.title, b.content, b.created_at, u.handle AS author
-      FROM blogs b
-      JOIN users u ON b.author_id = u.id
-      WHERE b.id = $1 AND is_published = true
-    `,
-      [id]
-    );
+// app.get("/blogs/:id", isAuthenticated, async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const result = await pool.query(
+//       `
+//       SELECT b.id, b.title, b.content, b.created_at, u.handle AS author
+//       FROM blogs b
+//       JOIN users u ON b.author_id = u.id
+//       WHERE b.id = $1 AND is_published = true
+//     `,
+//       [id]
+//     );
 
-    if (result.rows.length === 0)
-      return res.status(404).json({ error: "Blog not found" });
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("Error fetching blog:", err);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
+//     if (result.rows.length === 0)
+//       return res.status(404).json({ error: "Blog not found" });
+//     res.json(result.rows[0]);
+//   } catch (err) {
+//     console.error("Error fetching blog:", err);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// });
 
 app.post("/blogs", isAuthenticated, async (req, res) => {
   const { title, content, tags } = req.body;
