@@ -133,8 +133,15 @@ const Problem = () => {
       const result = await res.json();
       if (res.ok) {
         alert("Submission successful!");
-        setCode("");
+        // setCode("");
         setFile(null);
+        // Fetch the latest submission data (refresh the problem state)
+        const updatedProblemRes = await fetch(`${apiUrl}/problem/${id}`, {
+          credentials: "include",
+        });
+        const updatedProblemData = await updatedProblemRes.json();
+        setProblem(updatedProblemData);  // This will re-render the component with the new submissions
+
       } else {
         alert("Submission failed: " + result.error);
       }
@@ -169,9 +176,9 @@ const Problem = () => {
       if (res.ok) {
         const updatedExamples = problem.examples.map((ex, index) => ({
           ...ex,
-          result: result.results[index]
-            ? "Passed"
-            : `Failed (Expected: ${ex.output}, Got: ${result.results[index]})`,
+          result: result.results[index].passed
+          ? "Passed"
+          : `Failed (Expected: ${ex.output}, Got: ${result.results[index].actualOutput})`,        
         }));
         setProblem({ ...problem, examples: updatedExamples });
       } else {
@@ -250,8 +257,6 @@ const Problem = () => {
                 <tr>
                   <th>ID</th>
                   <th>Status</th>
-                  <th>Time</th>
-                  <th>Memory</th>
                   <th>Lang</th>
                 </tr>
               </thead>
@@ -261,8 +266,6 @@ const Problem = () => {
                     <tr key={s.id}>
                       <td><a href={`/submission/${s.id}`}>{s.id}</a></td>
                       <td>{s.verdict}</td>
-                      <td>{s.runtime}</td>
-                      <td>{s.memory}</td>
                       <td>{s.language}</td>
                     </tr>
                   ))

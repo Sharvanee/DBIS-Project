@@ -547,7 +547,6 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
        WHERE p.problem_id = $1`,
       [problemId]
     );
-    
 
     if (problem.rows.length === 0) {
       return res.status(404).json({ error: "Problem not found" });
@@ -1040,44 +1039,6 @@ app.get("/checkHandle", async (req, res) => {
   }
 });
 
-app.post("/submit", isAuthenticated, async (req, res) => {
-  try {
-    const user_id =
-      req.session && req.session.user ? req.session.user.id : null;
-    const { problem_id, code, language } = req.body;
-
-    if (!user_id) {
-      return res.status(401).json({ error: "Unauthorized: Please login." });
-    }
-
-    if (!problem_id) {
-      return res.status(400).json({ error: "Missing required fields.1" });
-    }
-    if (!code) {
-      return res.status(400).json({ error: "Missing required fields.2" });
-    }
-    if (!language) {
-      return res.status(400).json({ error: "Missing required fields.3" });
-    }
-
-    const insertResult = await pool.query(
-      `INSERT INTO submissions (
-        user_id, problem_id, code, language, created_at, verdict, runtime, memory
-      ) VALUES ($1, $2, $3, $4, NOW(), NULL, NULL, NULL)
-      RETURNING id;`,
-      [user_id, problem_id, code, language]
-    );
-
-    res.status(201).json({
-      message: "Submission received successfully.",
-      submission_id: insertResult.rows[0].id,
-    });
-  } catch (error) {
-    console.error("Error processing submission:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
 app.put(
   "/update-profile",
   isAuthenticated,
@@ -1113,7 +1074,7 @@ app.put(
 );
 
 app.post("/runAllExamples", async (req, res) => {
-  const { problem_id, language, code, examples } = req.body;
+  const { language, code, examples } = req.body;
 
   const extensionMap = {
     cpp: "cpp",
@@ -1131,39 +1092,50 @@ app.post("/runAllExamples", async (req, res) => {
 
     const runExample = (example) => {
       return new Promise((resolve) => {
-        let compileCommand, execCommand, execFile;
+        let output = "", error = "";
+        const input = (example.input || "").replace(/\r\n/g, "\n").trim();
+        const expected = (example.output || "").replace(/\r\n/g, "\n").trim();
+        const tempID = Date.now();
+
+        const finish = (actualOutput) => {
+          const isCorrect = actualOutput === expected;
+          resolve({
+            passed: isCorrect,
+            actualOutput
+          });
+        };
+        
+        
 
         switch (language) {
           case "cpp": {
-            const execName = `temp_exec_${Date.now()}`;
-            compileCommand = `g++ ${filePath} -o ${execName}`;
+            const execName = `temp_exec_${tempID}`;
+            const compileCommand = `g++ ${filePath} -o ${execName}`;
 
             exec(compileCommand, (compileErr) => {
-              if (compileErr) {
-                console.error("C++ Compilation Error:", compileErr);
-                return resolve(false);
-              }
+              if (compileErr) return resolve("Wrong Answer");
 
               const child = spawn(`./${execName}`);
-              let output = "",
-                error = "";
 
-              child.stdin.write(example.input);
-              child.stdin.end();
+              child.stdin.on("error", (err) => {
+                if (err.code === "EPIPE") console.error("C++ stdin EPIPE");
+              });
 
-              child.stdout.on("data", (data) => (output += data.toString()));
-              child.stderr.on("data", (data) => (error += data.toString()));
-
-              child.on("close", (code) => {
-                if (error) {
-                  console.error("Runtime Error:", error);
-                  return resolve(false);
+              if (child.stdin.writable) {
+                try {
+                  child.stdin.write(input);
+                  child.stdin.end();
+                } catch (e) {
+                  console.error("C++ write error:", e.message);
                 }
+              }
 
-                const actual = output.trim();
-                const expected = (example.output || "").trim();
+              child.stdout.on("data", (data) => output += data.toString());
+              child.stderr.on("data", (data) => error += data.toString());
 
-                resolve(actual === expected);
+              child.on("close", () => {
+                fs.unlinkSync(execName);
+                finish(output.trim());
               });
             });
             break;
@@ -1171,74 +1143,283 @@ app.post("/runAllExamples", async (req, res) => {
 
           case "python": {
             const child = spawn("python3", [filePath]);
-            let output = "",
-              error = "";
 
-            child.stdin.write(example.input);
-            child.stdin.end();
+            child.stdin.on("error", (err) => {
+              if (err.code === "EPIPE") console.error("Python stdin EPIPE");
+            });
 
-            child.stdout.on("data", (data) => (output += data.toString()));
-            child.stderr.on("data", (data) => (error += data.toString()));
+            if (child.stdin.writable) {
+              try {
+                child.stdin.write(input);
+                child.stdin.end();
+              } catch (e) {
+                console.error("Python write error:", e.message);
+              }
+            }
+
+            child.stdout.on("data", (data) => output += data.toString());
+            child.stderr.on("data", (data) => error += data.toString());
 
             child.on("close", () => {
-              if (error) console.error("Python Runtime Error:", error);
-              resolve(output.trim() === example.output.trim());
+              finish(output.trim());
             });
             break;
           }
 
           case "java": {
-            const className = "Main"; // Your code must have `public class Main`
+            const className = "Main";
             const javaFilePath = path.join(__dirname, `${className}.java`);
             fs.writeFileSync(javaFilePath, code);
 
             exec(`javac ${javaFilePath}`, (compileErr) => {
-              if (compileErr) {
-                console.error("Java Compilation Error:", compileErr);
-                return resolve(false);
-              }
+              if (compileErr) return resolve("Wrong Answer");
 
               const child = spawn("java", ["-cp", __dirname, className]);
-              let output = "",
-                error = "";
 
-              child.stdin.write(example.input);
-              child.stdin.end();
+              child.stdin.on("error", (err) => {
+                if (err.code === "EPIPE") console.error("Java stdin EPIPE");
+              });
 
-              child.stdout.on("data", (data) => (output += data.toString()));
-              child.stderr.on("data", (data) => (error += data.toString()));
+              if (child.stdin.writable) {
+                try {
+                  child.stdin.write(input);
+                  child.stdin.end();
+                } catch (e) {
+                  console.error("Java write error:", e.message);
+                }
+              }
+
+              child.stdout.on("data", (data) => output += data.toString());
+              child.stderr.on("data", (data) => error += data.toString());
 
               child.on("close", () => {
-                if (error) console.error("Java Runtime Error:", error);
                 fs.unlinkSync(javaFilePath);
                 fs.unlinkSync(path.join(__dirname, `${className}.class`));
-                resolve(output.trim() === example.output.trim());
+                finish(output.trim());
               });
             });
             break;
           }
 
           default:
-            resolve(false);
+            resolve("Wrong Answer");
         }
       });
     };
 
-    // Run examples sequentially
-    for (let example of examples) {
-      const passed = await runExample(example);
-      results.push(passed);
+    // Run all examples sequentially
+    for (const example of examples) {
+      const result = await runExample(example);
+      results.push(result);
     }
 
-    // Clean up code file
     fs.unlinkSync(filePath);
-
-    // Send results
     res.json({ results });
+
   } catch (err) {
     console.error("Error during execution:", err);
-    res.status(500).send("Error executing code");
+    res.status(500).send("Execution error");
   }
 });
+
+
+
+app.post("/submit", isAuthenticated, async (req, res) => {
+  try {
+    const { problem_id, language, code } = req.body;
+    const user_id = req.session?.user?.id;
+
+    const extensionMap = { cpp: "cpp", python: "py", java: "java" };
+    const fileExt = extensionMap[language];
+    const fileName = `temp_code_${Date.now()}.${fileExt}`;
+    const filePath = path.join(__dirname, fileName);
+
+    const insertResult = await pool.query(
+      `INSERT INTO submissions (user_id, problem_id, code, language, created_at, verdict)
+       VALUES ($1, $2, $3, $4, NOW(), NULL)
+       RETURNING id;`,
+      [user_id, problem_id, code, language]
+    );
+    const submission_id = insertResult.rows[0].id;
+
+    const problemResult = await pool.query(
+      "SELECT testcases FROM problems WHERE problem_id = $1;",
+      [problem_id]
+    );
+
+    if (problemResult.rows.length === 0) {
+      return res.status(404).json({ error: "Problem not found." });
+    }
+
+    const testcases = problemResult.rows[0].testcases;
+    fs.writeFileSync(filePath, code);
+    const results = [];
+
+    const runTestcase = (testcase) => {
+      return new Promise((resolve) => {
+        const timeoutLimit = 3000;
+        let verdict = "Accepted";
+        let timedOut = false;
+    
+        const input = testcase.input.replace(/\r\n/g, '\n').trim();
+        const expectedOutput = (testcase.output || "").replace(/\r\n/g, '\n').trim();
+    
+        const timeout = setTimeout(() => {
+          timedOut = true;
+          verdict = "Time Limit Exceeded";
+          resolve({ status: verdict, input, expected: expectedOutput, actual: "" });
+        }, timeoutLimit);
+    
+        let output = "", error = "";
+        const tempID = Date.now();
+    
+        const finish = (actualOutput) => {
+          if (timedOut) return;
+          clearTimeout(timeout);
+          if (error) verdict = "Runtime Error";
+          else if (actualOutput !== expectedOutput) verdict = "Wrong Answer";
+          resolve({ status: verdict, input, expected: expectedOutput, actual: actualOutput });
+        };
+    
+        switch (language) {
+          case "cpp": {
+            const execName = `temp_exec_${tempID}`;
+            const compileCommand = `g++ ${filePath} -o ${execName}`;
+    
+            exec(compileCommand, (compileErr) => {
+              if (compileErr) {
+                clearTimeout(timeout);
+                return resolve({ status: "Runtime Error", input, expected: expectedOutput, actual: "" });
+              }
+    
+              const child = spawn(`./${execName}`);
+              let actual = "";
+    
+              child.stdin.on("error", (err) => {
+                if (err.code === "EPIPE") {
+                  console.error("C++ stdin EPIPE (closed pipe)");
+                }
+              });
+    
+              if (child.stdin.writable) {
+                try {
+                  child.stdin.write(input);
+                  child.stdin.end();
+                } catch (e) {
+                  console.error("Error writing to C++ stdin:", e.message);
+                }
+              }
+    
+              child.stdout.on("data", (data) => output += data.toString());
+              child.stderr.on("data", (data) => error += data.toString());
+              child.on("close", () => {
+                fs.unlinkSync(execName);
+                finish(output.trim());
+              });
+            });
+            break;
+          }
+    
+          case "python": {
+            const child = spawn("python3", [filePath]);
+    
+            child.stdin.on("error", (err) => {
+              if (err.code === "EPIPE") {
+                console.error("Python stdin EPIPE (closed pipe)");
+              }
+            });
+    
+            if (child.stdin.writable) {
+              try {
+                child.stdin.write(input);
+                child.stdin.end();
+              } catch (e) {
+                console.error("Error writing to Python stdin:", e.message);
+              }
+            }
+    
+            child.stdout.on("data", (data) => output += data.toString());
+            child.stderr.on("data", (data) => error += data.toString());
+            child.on("close", () => {
+              finish(output.trim());
+            });
+            break;
+          }
+    
+          case "java": {
+            const className = "Main";
+            const javaFilePath = path.join(__dirname, `${className}.java`);
+            fs.writeFileSync(javaFilePath, code);
+    
+            exec(`javac ${javaFilePath}`, (compileErr) => {
+              if (compileErr) {
+                clearTimeout(timeout);
+                return resolve({ status: "Runtime Error", input, expected: expectedOutput, actual: "" });
+              }
+    
+              const child = spawn("java", ["-cp", __dirname, className]);
+    
+              child.stdin.on("error", (err) => {
+                if (err.code === "EPIPE") {
+                  console.error("Java stdin EPIPE (closed pipe)");
+                }
+              });
+    
+              if (child.stdin.writable) {
+                try {
+                  child.stdin.write(input);
+                  child.stdin.end();
+                } catch (e) {
+                  console.error("Error writing to Java stdin:", e.message);
+                }
+              }
+    
+              child.stdout.on("data", (data) => output += data.toString());
+              child.stderr.on("data", (data) => error += data.toString());
+              child.on("close", () => {
+                fs.unlinkSync(javaFilePath);
+                fs.unlinkSync(path.join(__dirname, `${className}.class`));
+                finish(output.trim());
+              });
+            });
+            break;
+          }
+    
+          default:
+            clearTimeout(timeout);
+            resolve({ status: "Runtime Error", input, expected: expectedOutput, actual: "" });
+        }
+      });
+    };
+    
+
+    for (const testcase of testcases) {
+      const result = await runTestcase(testcase);
+      results.push(result);
+    }
+
+    fs.unlinkSync(filePath);
+
+    const finalVerdict = results.every(r => r.status === "Accepted") ? "Accepted" : "Wrong Answer";
+
+    await pool.query(
+      "UPDATE submissions SET verdict = $1 WHERE id = $2;",
+      [finalVerdict, submission_id]
+    );
+
+    res.status(201).json({
+      message: "Submission evaluated.",
+      submission_id,
+      results,
+      verdict: finalVerdict,
+    });
+
+  } catch (error) {
+    console.error("Submit error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
 
 module.exports.isAuthenticated = isAuthenticated;

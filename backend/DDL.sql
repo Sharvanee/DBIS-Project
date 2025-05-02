@@ -74,7 +74,11 @@ CREATE TABLE submissions (
   problem_id VARCHAR(10) REFERENCES problems(problem_id) ON DELETE CASCADE,
   code TEXT NOT NULL,
   language VARCHAR(20) CHECK (language IN ('cpp', 'python', 'java', 'js')),
-  verdict VARCHAR(50) CHECK (verdict IN ('Accepted', 'Wrong Answer', 'TLE', 'Compilation Error')),
+  verdict VARCHAR(50) CHECK (verdict IN ('Accepted',
+    'Wrong Answer',
+    'Time Limit Exceeded',
+    'Memory Limit Exceeded',
+    'Runtime Error','Compilation Error')),
   runtime VARCHAR(20),
   memory VARCHAR(20),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
