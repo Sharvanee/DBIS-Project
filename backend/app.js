@@ -2,8 +2,8 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const bcrypt = require("bcrypt");
-const { exec } = require('child_process');
-const { spawn } = require('child_process');
+const { exec } = require("child_process");
+const { spawn } = require("child_process");
 const cors = require("cors");
 const passport = require("passport");
 require("./config/passport");
@@ -72,7 +72,7 @@ app.use(authRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api", aiRoutes);
 // app.use("/api", contestRoutes);
-app.use("/api/profile", profileRoutes); 
+app.use("/api/profile", profileRoutes);
 
 function isAuthenticated(req, res, next) {
   if (!req.session.user) {
@@ -116,6 +116,27 @@ app.post("/contest/:id/register", isAuthenticated, async (req, res) => {
   }
 });
 
+// Route: GET /contest/:id/isRegistered
+app.get("/contest/:id/isRegistered", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const contestId = req.params.id;
+
+    if (!userId) return res.status(401).json({ isRegistered: false });
+
+    const result = await pool.query(
+      `SELECT 1 FROM contest_registrations WHERE user_id = $1 AND contest_id = $2`,
+      [userId, contestId]
+    );
+
+    const isRegistered = result.rowCount > 0;
+    res.json({ isRegistered });
+  } catch (err) {
+    console.error("Error checking registration:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Get all contest registrations for the logged-in user
 app.get("/myRegistrations", isAuthenticated, async (req, res) => {
   const userId = req.session.user.id;
@@ -132,8 +153,6 @@ app.get("/myRegistrations", isAuthenticated, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch registrations" });
   }
 });
-
-
 
 app.get("/contest/:id", isAuthenticated, async (req, res) => {
   const contestId = req.params.id;
@@ -166,7 +185,7 @@ app.get("/contest/:id/stats", isAuthenticated, async (req, res) => {
   const contestId = req.params.id;
 
   try {
-    // Problem-level stats
+    // ✅ Problem-level stats
     const problemStatsQuery = await pool.query(
       `
       SELECT 
@@ -182,40 +201,215 @@ app.get("/contest/:id/stats", isAuthenticated, async (req, res) => {
     );
 
     const problemStats = {};
-    problemStatsQuery.rows.forEach(row => {
+    problemStatsQuery.rows.forEach((row) => {
       problemStats[row.problem_id] = {
         total_submissions: parseInt(row.total_submissions),
-        accepted_submissions: parseInt(row.accepted_submissions)
+        accepted_submissions: parseInt(row.accepted_submissions),
       };
     });
 
-    // User-level leaderboard
+    // ✅ User-level leaderboard including all registered users
     const leaderboardQuery = await pool.query(
       `
       SELECT
-        s.user_id,
+        r.user_id,
         u.handle,
-        COUNT(DISTINCT s.problem_id) AS solved_count,
-        MIN(s.created_at) AS first_solved_at
-      FROM submissions s
-      INNER JOIN problems p ON p.problem_id = s.problem_id
-      INNER JOIN users u ON u.id = s.user_id
-      WHERE p.contest_id = $1 AND s.verdict = 'Accepted'
-      GROUP BY s.user_id, u.handle
-      ORDER BY solved_count DESC, first_solved_at ASC
+        COUNT(DISTINCT CASE WHEN s.verdict = 'Accepted' THEN s.problem_id END) AS solved_count,
+        MIN(CASE WHEN s.verdict = 'Accepted' THEN s.created_at END) AS first_solved_at
+      FROM contest_registrations r
+      INNER JOIN users u ON u.id = r.user_id
+      LEFT JOIN submissions s ON s.user_id = r.user_id
+        AND s.problem_id IN (SELECT problem_id FROM problems WHERE contest_id = $1)
+      WHERE r.contest_id = $1
+      GROUP BY r.user_id, u.handle
+      ORDER BY solved_count DESC, first_solved_at ASC NULLS LAST
       `,
       [contestId]
     );
-    
 
     res.json({
       problemStats,
-      userLeaderboard: leaderboardQuery.rows
+      userLeaderboard: leaderboardQuery.rows,
     });
-
   } catch (err) {
     console.error("Error fetching contest stats:", err);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get("/blogs", isAuthenticated, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT b.id, b.title, b.content, b.created_at, u.handle AS author
+      FROM blogs b
+      JOIN users u ON b.author_id = u.id
+      WHERE is_published = true
+      ORDER BY b.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching blogs:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get("/blogs/:id", isAuthenticated, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `
+      SELECT b.id, b.title, b.content, b.created_at, u.handle AS author
+      FROM blogs b
+      JOIN users u ON b.author_id = u.id
+      WHERE b.id = $1 AND is_published = true
+    `,
+      [id]
+    );
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: "Blog not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error fetching blog:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/blogs", isAuthenticated, async (req, res) => {
+  const { title, content, tags } = req.body;
+  const authorId = req.session.user.id;
+
+  try {
+    const result = await pool.query(
+      `
+      INSERT INTO blogs (title, content, author_id, tags)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+    `,
+      [title, content, authorId, tags || []]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error("Error creating blog:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Get comments for a blog
+app.get("/blogs/:id/comments", isAuthenticated, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT c.id, c.content, c.created_at, 
+             u.id AS user_id, u.display_name, u.profile_pic
+      FROM comments c
+      JOIN users u ON c.user_id = u.id
+      WHERE c.blog_id = $1
+      ORDER BY c.created_at ASC
+    `,
+      [id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching comments:", err);
+    res.status(500).json({ error: "Failed to fetch comments" });
+  }
+});
+
+// Add comment
+app.post("/blogs/:id/comments", isAuthenticated, async (req, res) => {
+  const { id } = req.params;
+  const { content } = req.body;
+  const userId = req.session.user.id;
+
+  if (!content || !content.trim()) {
+    return res.status(400).json({ error: "Comment content cannot be empty" });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      INSERT INTO comments (blog_id, user_id, content)
+      VALUES ($1, $2, $3)
+      RETURNING *
+    `,
+      [id, userId, content]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error("Error adding comment:", err);
+    res.status(500).json({ error: "Failed to add comment" });
+  }
+});
+
+// Like or Dislike
+app.post("/blogs/:id/react", isAuthenticated, async (req, res) => {
+  const { id } = req.params;
+  const { is_like } = req.body;
+  const userId = req.session.user.id;
+
+  if (typeof is_like !== "boolean") {
+    return res.status(400).json({ error: "is_like must be true or false" });
+  }
+
+  try {
+    await pool.query(
+      `
+      INSERT INTO blog_reactions (blog_id, user_id, is_like)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (blog_id, user_id)
+      DO UPDATE SET is_like = EXCLUDED.is_like
+    `,
+      [id, userId, is_like]
+    );
+
+    res.sendStatus(200);
+  } catch (err) {
+    console.error("Error recording reaction:", err);
+    res.status(500).json({ error: "Failed to react to blog" });
+  }
+});
+
+// Get blog with reactions
+app.get("/blogs/:id", isAuthenticated, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const blogRes = await pool.query(
+      `
+      SELECT b.*, 
+             u.display_name AS author, 
+             u.profile_pic, 
+             u.id AS author_id
+      FROM blogs b
+      JOIN users u ON b.author_id = u.id
+      WHERE b.id = $1
+    `,
+      [id]
+    );
+
+    if (!blogRes.rows[0]) return res.sendStatus(404);
+
+    const likesRes = await pool.query(
+      `
+      SELECT 
+        COUNT(*) FILTER (WHERE is_like) AS likes,
+        COUNT(*) FILTER (WHERE NOT is_like) AS dislikes
+      FROM blog_reactions
+      WHERE blog_id = $1
+    `,
+      [id]
+    );
+
+    res.json({ ...blogRes.rows[0], ...likesRes.rows[0] });
+  } catch (err) {
+    console.error("Error fetching blog:", err);
+    res.status(500).json({ error: "Failed to fetch blog" });
   }
 });
 
@@ -275,16 +469,22 @@ app.post("/signup", async (req, res) => {
 app.post("/login", async (req, res) => {
   try {
     const { email, password, rememberMe } = req.body;
-    const userQuery = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const userQuery = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
 
     if (userQuery.rows.length === 0) {
-      return res.status(400).json({ success: false, message: "Invalid credentials" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
     const user = userQuery.rows[0];
     const correct_pwd = await bcrypt.compare(password, user.password_hash);
     if (!correct_pwd) {
-      return res.status(400).json({ success: false, message: "Invalid credentials" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid credentials" });
     }
 
     if (rememberMe) {
@@ -306,7 +506,6 @@ app.post("/login", async (req, res) => {
   }
 });
 
-
 app.get("/isLoggedIn", async (req, res) => {
   if (req.session.user) {
     return res
@@ -316,7 +515,6 @@ app.get("/isLoggedIn", async (req, res) => {
     return res.status(400).json({ message: "Not logged in" });
   }
 });
-
 
 app.post("/logout", (req, res) => {
   req.session.destroy((err) => {
@@ -397,7 +595,7 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
       submissions: submissions.rows,
       examples: examples,
       contest_start_time: problem.rows[0].contest_start_time,
-      contest_duration: problem.rows[0].contest_duration
+      contest_duration: problem.rows[0].contest_duration,
     });
   } catch (err) {
     console.error("Error fetching problem:", err);
@@ -410,9 +608,58 @@ app.get("/contests", isAuthenticated, async (req, res) => {
   res.json(contests.rows);
 });
 
+// GET /contestProblemCounts
+app.get("/contestProblemCounts", isAuthenticated, async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT contest_id, COUNT(*) AS problem_count
+      FROM problems
+      GROUP BY contest_id
+    `);
 
+    const result = {};
+    for (const row of rows) {
+      result[row.contest_id] = parseInt(row.problem_count, 10);
+    }
 
+    res.json(result);
+  } catch (err) {
+    console.error("Error fetching problem counts:", err);
+    res.status(500).json({ error: "Failed to get problem counts" });
+  }
+});
 
+// GET /mySolvedCounts
+app.get("/mySolvedCounts", isAuthenticated, async (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const { rows } = await pool.query(
+      `
+      SELECT
+        c.contest_id,
+        COUNT(DISTINCT s.problem_id) AS solved
+      FROM contests c
+      JOIN problems p ON c.contest_id = p.contest_id
+      JOIN submissions s ON s.problem_id = p.problem_id
+      WHERE s.user_id = $1 AND s.verdict = 'Accepted'
+      GROUP BY c.contest_id
+    `,
+      [userId]
+    );
+
+    const solvedMap = {};
+    for (const row of rows) {
+      solvedMap[row.contest_id] = parseInt(row.solved, 10);
+    }
+
+    res.json(solvedMap);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to get solve counts" });
+  }
+});
 
 app.post("/add-contest", isAuthenticated, async (req, res) => {
   try {
@@ -445,7 +692,6 @@ app.post("/add-contest", isAuthenticated, async (req, res) => {
       `,
       [contestId, title, start_time, duration_minutes]
     );
-
 
     for (let i = 0; i < problems.length; i++) {
       const {
@@ -624,7 +870,6 @@ app.get(
   }
 );
 
-
 app.get("/checkHandle", async (req, res) => {
   const { handle } = req.query;
 
@@ -721,14 +966,13 @@ app.put(
   }
 );
 
-
-app.post('/runAllExamples', async (req, res) => {
+app.post("/runAllExamples", async (req, res) => {
   const { problem_id, language, code, examples } = req.body;
 
   const extensionMap = {
-    cpp: 'cpp',
-    python: 'py',
-    java: 'java',
+    cpp: "cpp",
+    python: "py",
+    java: "java",
   };
 
   const fileExt = extensionMap[language];
@@ -744,81 +988,82 @@ app.post('/runAllExamples', async (req, res) => {
         let compileCommand, execCommand, execFile;
 
         switch (language) {
-          case 'cpp': {
+          case "cpp": {
             const execName = `temp_exec_${Date.now()}`;
             compileCommand = `g++ ${filePath} -o ${execName}`;
 
             exec(compileCommand, (compileErr) => {
               if (compileErr) {
-                console.error('C++ Compilation Error:', compileErr);
+                console.error("C++ Compilation Error:", compileErr);
                 return resolve(false);
               }
 
               const child = spawn(`./${execName}`);
-              let output = '', error = '';
+              let output = "",
+                error = "";
 
               child.stdin.write(example.input);
               child.stdin.end();
 
-              child.stdout.on('data', (data) => output += data.toString());
-              child.stderr.on('data', (data) => error += data.toString());
+              child.stdout.on("data", (data) => (output += data.toString()));
+              child.stderr.on("data", (data) => (error += data.toString()));
 
-              child.on('close', (code) => {
+              child.on("close", (code) => {
                 if (error) {
-                  console.error('Runtime Error:', error);
+                  console.error("Runtime Error:", error);
                   return resolve(false);
                 }
-              
+
                 const actual = output.trim();
-                const expected = (example.output || '').trim();
-                
-              
+                const expected = (example.output || "").trim();
+
                 resolve(actual === expected);
               });
-              
             });
             break;
           }
 
-          case 'python': {
-            const child = spawn('python3', [filePath]);
-            let output = '', error = '';
+          case "python": {
+            const child = spawn("python3", [filePath]);
+            let output = "",
+              error = "";
 
             child.stdin.write(example.input);
             child.stdin.end();
 
-            child.stdout.on('data', (data) => output += data.toString());
-            child.stderr.on('data', (data) => error += data.toString());
+            child.stdout.on("data", (data) => (output += data.toString()));
+            child.stderr.on("data", (data) => (error += data.toString()));
 
-            child.on('close', () => {
-              if (error) console.error('Python Runtime Error:', error);
+            child.on("close", () => {
+              if (error) console.error("Python Runtime Error:", error);
               resolve(output.trim() === example.output.trim());
             });
             break;
           }
 
-          case 'java': {
-            const className = 'Main'; // Your code must have `public class Main`
+          case "java": {
+            const className = "Main"; // Your code must have `public class Main`
             const javaFilePath = path.join(__dirname, `${className}.java`);
             fs.writeFileSync(javaFilePath, code);
 
             exec(`javac ${javaFilePath}`, (compileErr) => {
               if (compileErr) {
-                console.error('Java Compilation Error:', compileErr);
+                console.error("Java Compilation Error:", compileErr);
                 return resolve(false);
               }
 
-              const child = spawn('java', ['-cp', __dirname, className]);
-              let output = '', error = '';
+              const child = spawn("java", ["-cp", __dirname, className]);
+              let output = "",
+                error = "";
 
               child.stdin.write(example.input);
               child.stdin.end();
 
-              child.stdout.on('data', (data) => output += data.toString());
-              child.stderr.on('data', (data) => error += data.toString());
+              child.stdout.on("data", (data) => (output += data.toString()));
+              child.stderr.on("data", (data) => (error += data.toString()));
 
-              child.on('close', () => {
-                if (error) console.error('Java Runtime Error:', error);
+              child.on("close", () => {
+                if (error) console.error("Java Runtime Error:", error);
                 fs.unlinkSync(javaFilePath);
                 fs.unlinkSync(path.join(__dirname, `${className}.class`));
                 resolve(output.trim() === example.output.trim());
@@ -845,10 +1090,9 @@ app.post('/runAllExamples', async (req, res) => {
     // Send results
     res.json({ results });
   } catch (err) {
-    console.error('Error during execution:', err);
-    res.status(500).send('Error executing code');
+    console.error("Error during execution:", err);
+    res.status(500).send("Error executing code");
   }
 });
-
 
 module.exports.isAuthenticated = isAuthenticated;

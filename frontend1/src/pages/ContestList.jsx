@@ -9,7 +9,7 @@ const ContestList = () => {
   const [contests, setContests] = useState([]);
   const [registeredContestIds, setRegisteredContestIds] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [solvedCountMap, setSolvedCountMap] = useState({});
   const [activeCurrentPage, setActiveCurrentPage] = useState(1);
   const [upcomingCurrentPage, setUpcomingCurrentPage] = useState(1);
   const [pastCurrentPage, setPastCurrentPage] = useState(1);
@@ -33,16 +33,26 @@ const ContestList = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [contestRes, registrationRes] = await Promise.all([
+        const [contestRes, registrationRes, solveCountRes, problemCountRes] = await Promise.all([
           fetch(`${apiUrl}/contests`, { credentials: "include" }),
           fetch(`${apiUrl}/myRegistrations`, { credentials: "include" }),
+          fetch(`${apiUrl}/mySolvedCounts`, { credentials: "include" }),
+          fetch(`${apiUrl}/contestProblemCounts`, { credentials: "include" }),
         ]);
 
         const contestsData = await contestRes.json();
         const registeredData = await registrationRes.json();
+        const solvedCounts = await solveCountRes.json();
+        const problemCounts = await problemCountRes.json();
 
-        setContests(contestsData);
+        const contestsWithCounts = contestsData.map((contest) => ({
+          ...contest,
+          problem_count: problemCounts[contest.contest_id] || 0,
+        }));
+
+        setContests(contestsWithCounts);
         setRegisteredContestIds(registeredData.map((reg) => reg.contest_id));
+        setSolvedCountMap(solvedCounts);
       } catch (err) {
         console.error("Failed to fetch data:", err);
       } finally {
@@ -65,11 +75,17 @@ const ContestList = () => {
     return now < start;
   });
 
-  const pastContests = contests.filter((contest) => {
-    const start = new Date(contest.start_time);
-    const end = new Date(start.getTime() + contest.duration * 60 * 1000);
-    return now > end;
-  });
+  const pastContests = contests
+    .filter((contest) => {
+      const start = new Date(contest.start_time);
+      const end = new Date(start.getTime() + contest.duration * 60 * 1000);
+      return now > end;
+    })
+    .sort((a, b) => {
+      const aEnd = new Date(new Date(a.start_time).getTime() + a.duration * 60 * 1000);
+      const bEnd = new Date(new Date(b.start_time).getTime() + b.duration * 60 * 1000);
+      return bEnd - aEnd;
+    });
 
   const paginate = (array, page) =>
     array.slice((page - 1) * contestsPerPage, page * contestsPerPage);
@@ -115,6 +131,20 @@ const ContestList = () => {
     }
   };
 
+  const formatDateOrTime = (date, forceFull = false) => {
+    if (forceFull) {
+      return date.toLocaleString([], {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
+    return date.toLocaleDateString();
+  };
+
   const renderContestTable = (
     title,
     contestList,
@@ -123,6 +153,7 @@ const ContestList = () => {
     onPageChange
   ) => {
     const showActions = title.toLowerCase().includes("upcoming");
+    const showSolved = title.toLowerCase().includes("active");
 
     return (
       <>
@@ -135,17 +166,19 @@ const ContestList = () => {
               <thead>
                 <tr>
                   <th>Title</th>
-                  <th>Start Time</th>
-                  <th>End Time</th>
+                  <th>{title.includes("Upcoming") || title.includes("Active") ? "Starts" : "Started"}</th>
+                  <th>{title.includes("Upcoming") || title.includes("Active") ? "Ends" : "Ended"}</th>
+                  {showSolved && <th>Problems Solved</th>}
                   {showActions && <th>Action</th>}
                 </tr>
               </thead>
-
               <tbody>
                 {contestList.map((contest, index) => {
                   const start = new Date(contest.start_time);
                   const end = new Date(start.getTime() + contest.duration * 60 * 1000);
                   const isRegistered = registeredContestIds.includes(contest.contest_id);
+                  const solved = solvedCountMap[contest.contest_id] || 0;
+                  const total = contest.problem_count || 0;
 
                   return (
                     <tr key={index}>
@@ -157,14 +190,23 @@ const ContestList = () => {
                           {contest.contest_name}
                         </a>
                       </td>
-                      <td>{start.toLocaleString()}</td>
-                      <td>{end.toLocaleString()}</td>
+                      <td>{formatDateOrTime(start, true)}</td>
+                      <td>{formatDateOrTime(end, true)}</td>
+                      {showSolved && (
+                        <td>
+                          {isRegistered ? (
+                            <span>{solved}/{total}</span>
+                          ) : (
+                            <span style={{ color: "gray", fontStyle: "italic" }}>
+                              Not registered
+                            </span>
+                          )}
+                        </td>
+                      )}
                       {showActions && (
                         <td>
                           <button
-                            className={`action-button ${
-                              isRegistered ? "deregister" : "register"
-                            }`}
+                            className={`action-button ${isRegistered ? "deregister" : "register"}`}
                             onClick={() => handleRegister(contest.contest_id)}
                           >
                             {isRegistered ? "Deregister" : "Register"}
@@ -193,11 +235,8 @@ const ContestList = () => {
               )}
 
               {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter(
-                  (num) =>
-                    num === currentPage ||
-                    num === currentPage - 1 ||
-                    num === currentPage + 1
+                .filter((num) =>
+                  [currentPage, currentPage - 1, currentPage + 1].includes(num)
                 )
                 .map((num) => (
                   <button

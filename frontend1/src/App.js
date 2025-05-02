@@ -12,6 +12,9 @@ import Profile from "./pages/Profile";
 import Submission from "./pages/Submission";
 import AddContest from "./pages/AddContest";
 import EditProfile from "./pages/EditProfile";
+import Blogs from "./pages/Blogs";
+import BlogDetail from "./pages/BlogDetail";
+import BlogForm from "./pages/BlogForm";
 
 function App() {
   return (
@@ -29,6 +32,9 @@ function App() {
       <Route path="/submission/:id" element={<Submission />} />
       <Route path="/add-contest" element={<AddContest />} />
       <Route path="edit-profile" element={<EditProfile />} />
+      <Route path="/blogs" element={<Blogs />} />
+      <Route path="/blogs/:id" element={<BlogDetail />} />
+      <Route path="/add-blog" element={<BlogForm />} />
     </Routes>
   );
 }

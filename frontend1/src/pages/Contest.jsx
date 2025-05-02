@@ -14,6 +14,7 @@ const Contest = () => {
   const [userLeaderboard, setUserLeaderboard] = useState([]);
   const [countdown, setCountdown] = useState("");
   const [endTime, setEndTime] = useState(null);
+  const [isRegistered, setIsRegistered] = useState(false);
 
   useEffect(() => {
     const fetchContest = async () => {
@@ -29,10 +30,7 @@ const Contest = () => {
         const res = await fetch(`${apiUrl}/contest/${id}`, {
           credentials: "include",
         });
-
-        if (!res.ok) {
-          throw new Error("Contest not found");
-        }
+        if (!res.ok) throw new Error("Contest not found");
 
         const data = await res.json();
         setContest(data);
@@ -43,9 +41,8 @@ const Contest = () => {
           setEndTime(end);
         }
 
-        // ✅ Only fetch stats after successful contest + login fetch
         await fetchStats();
-
+        await checkRegistration(); // ✅ check registration after login
       } catch (err) {
         console.error("Error fetching contest:", err);
         navigate("/not-found");
@@ -66,6 +63,19 @@ const Contest = () => {
         setUserLeaderboard(data.userLeaderboard);
       } catch (err) {
         console.error("Stats error:", err);
+      }
+    };
+
+    const checkRegistration = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/contest/${id}/isRegistered`, {
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Failed to check registration");
+        const data = await res.json();
+        setIsRegistered(data.isRegistered);
+      } catch (err) {
+        console.error("Registration check error:", err);
       }
     };
 
@@ -126,6 +136,7 @@ const Contest = () => {
                 <th>Difficulty</th>
                 <th>Total Submissions</th>
                 <th>Accepted Submissions</th>
+                <th>Submit</th> {/* ✅ new column */}
               </tr>
             </thead>
             <tbody>
@@ -142,6 +153,13 @@ const Contest = () => {
                     <td>{problem.difficulty}</td>
                     <td>{stats.total_submissions}</td>
                     <td>{stats.accepted_submissions}</td>
+                    <td>
+                      {isRegistered ? (
+                        <a href={`/problem/${problem.id}`}>Submit</a>
+                      ) : (
+                        <span style={{ color: "gray" }}>Register to submit</span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -168,7 +186,12 @@ const Contest = () => {
                   <td>{index + 1}</td>
                   <td>{user.handle}</td>
                   <td>{user.solved_count}</td>
-                  <td>{new Date(user.first_solved_at).toLocaleString()}</td>
+                  <td>
+  {user.first_solved_at
+    ? new Date(user.first_solved_at).toLocaleString()
+    : "—"}
+</td>
+
                 </tr>
               ))}
             </tbody>

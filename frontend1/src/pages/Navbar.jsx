@@ -33,6 +33,7 @@ const Navbar = () => {
         <Link to="/problem-set" className="navbar-link">Problem Set</Link>
         <Link to="/profile" className="navbar-link">Profile</Link>
         <Link to="/add-contest" className="navbar-link">Add Contest</Link>
+        <Link to="/blogs" className="navbar-link">Blogs</Link>
       </div>
       <button onClick={handleLogout} className="navbar-logout">Logout</button>
     </nav>
