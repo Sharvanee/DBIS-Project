@@ -223,3 +223,29 @@ body {
     background-color: #0056b3;
   }
   
+
+  .reactions button {
+    padding: 8px 16px;
+    margin-right: 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s ease;
+  }
+  
+  .like-button.active {
+    background-color: #28a745;
+    color: white;
+  }
+  
+  .dislike-button.active {
+    background-color: #dc3545;
+    color: white;
+  }
+  
+  .like-button:not(.active):hover,
+  .dislike-button:not(.active):hover {
+    background-color: #f0f0f0;
+  }
+  

@@ -81,7 +81,6 @@ function isAuthenticated(req, res, next) {
   next();
 }
 
-
 app.get("/blogs", isAuthenticated, async (req, res) => {
   try {
     const result = await pool.query(`
@@ -98,27 +97,6 @@ app.get("/blogs", isAuthenticated, async (req, res) => {
   }
 });
 
-// app.get("/blogs/:id", isAuthenticated, async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const result = await pool.query(
-//       `
-//       SELECT b.id, b.title, b.content, b.created_at, u.handle AS author
-//       FROM blogs b
-//       JOIN users u ON b.author_id = u.id
-//       WHERE b.id = $1 AND is_published = true
-//     `,
-//       [id]
-//     );
-
-//     if (result.rows.length === 0)
-//       return res.status(404).json({ error: "Blog not found" });
-//     res.json(result.rows[0]);
-//   } catch (err) {
-//     console.error("Error fetching blog:", err);
-//     res.status(500).json({ error: "Internal Server Error" });
-//   }
-// });
 
 app.post("/blogs", isAuthenticated, async (req, res) => {
   const { title, content, tags } = req.body;
@@ -193,32 +171,69 @@ app.post("/blogs/:id/comments", isAuthenticated, async (req, res) => {
 });
 
 // Like or Dislike
+// app.post("/blogs/:id/react", isAuthenticated, async (req, res) => {
+//   const { id } = req.params;
+//   const { is_like } = req.body;
+//   const userId = req.session.user.id;
+
+//   if (typeof is_like !== "boolean") {
+//     return res.status(400).json({ error: "is_like must be true or false" });
+//   }
+
+//   try {
+//     await pool.query(
+//       `
+//       INSERT INTO blog_reactions (blog_id, user_id, is_like)
+//       VALUES ($1, $2, $3)
+//       ON CONFLICT (blog_id, user_id)
+//       DO UPDATE SET is_like = EXCLUDED.is_like
+//     `,
+//       [id, userId, is_like]
+//     );
+
+//     res.sendStatus(200);
+//   } catch (err) {
+//     console.error("Error recording reaction:", err);
+//     res.status(500).json({ error: "Failed to react to blog" });
+//   }
+// });
+
+
 app.post("/blogs/:id/react", isAuthenticated, async (req, res) => {
   const { id } = req.params;
   const { is_like } = req.body;
   const userId = req.session.user.id;
 
-  if (typeof is_like !== "boolean") {
-    return res.status(400).json({ error: "is_like must be true or false" });
+  if (typeof is_like !== "boolean" && is_like !== null) {
+    return res.status(400).json({ error: "is_like must be true, false, or null" });
   }
 
   try {
-    await pool.query(
-      `
-      INSERT INTO blog_reactions (blog_id, user_id, is_like)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (blog_id, user_id)
-      DO UPDATE SET is_like = EXCLUDED.is_like
-    `,
-      [id, userId, is_like]
-    );
-
+    if (is_like === null) {
+      // If is_like is null, delete the reaction
+      await pool.query(
+        `DELETE FROM blog_reactions WHERE blog_id = $1 AND user_id = $2`,
+        [id, userId]
+      );
+    } else {
+      // Otherwise, insert or update the reaction
+      await pool.query(
+        `
+        INSERT INTO blog_reactions (blog_id, user_id, is_like)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (blog_id, user_id)
+        DO UPDATE SET is_like = EXCLUDED.is_like
+      `,
+        [id, userId, is_like]
+      );
+    }
     res.sendStatus(200);
   } catch (err) {
     console.error("Error recording reaction:", err);
     res.status(500).json({ error: "Failed to react to blog" });
   }
 });
+
 
 // Get blog with reactions
 app.get("/blogs/:id", isAuthenticated, async (req, res) => {
@@ -251,17 +266,63 @@ app.get("/blogs/:id", isAuthenticated, async (req, res) => {
       [id]
     );
 
-    res.json({ ...blogRes.rows[0], ...likesRes.rows[0] });
+    const { likes, dislikes } = likesRes.rows[0];
+    res.json({
+      ...blogRes.rows[0],
+      likes: Number(likes),
+      dislikes: Number(dislikes),
+    });
   } catch (err) {
     console.error("Error fetching blog:", err);
     res.status(500).json({ error: "Failed to fetch blog" });
   }
 });
 
+
+// app.get("/blogs/:id/user-reaction", isAuthenticated, async (req, res) => {
+//   const { id } = req.params;
+//   const userId = req.session.user.id;
+
+//   try {
+//     const result = await pool.query(
+//       `SELECT is_like FROM blog_reactions WHERE blog_id = $1 AND user_id = $2`,
+//       [id, userId]
+//     );
+
+//     if (result.rows.length === 0) return res.json({ is_like: null });
+
+//     res.json({ is_like: result.rows[0].is_like });
+//   } catch (err) {
+//     console.error("Error fetching user reaction:", err);
+//     res.status(500).json({ error: "Failed to fetch user reaction" });
+//   }
+// });
+
+
+app.get("/blogs/:id/user-reaction", isAuthenticated, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.session.user.id;
+
+  try {
+    const result = await pool.query(
+      `SELECT is_like FROM blog_reactions WHERE blog_id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+
+    if (result.rows.length === 0) return res.json({ is_like: null });
+
+    res.json({ is_like: result.rows[0].is_like });
+  } catch (err) {
+    console.error("Error fetching user reaction:", err);
+    res.status(500).json({ error: "Failed to fetch user reaction" });
+  }
+});
+
+
 app.post("/signup", async (req, res) => {
   try {
     const { handle, email, password } = req.body;
-    
+
     const email_in_use = await pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
@@ -280,10 +341,10 @@ app.post("/signup", async (req, res) => {
       return res
         .status(400)
         .json({ message: "Error: Username is already registered." });
-      }
+    }
 
-      const hashed_pwd = await bcrypt.hash(password, 10);
-      const insertResult = await pool.query(
+    const hashed_pwd = await bcrypt.hash(password, 10);
+    const insertResult = await pool.query(
       `INSERT INTO users (handle, email, password_hash, created_at) 
        VALUES ($1, $2, $3, CURRENT_TIMESTAMP) 
        RETURNING id, created_at`,
@@ -315,16 +376,23 @@ app.post("/login", async (req, res) => {
   try {
     const { handle, password, rememberMe } = req.body;
 
-    const userQuery = await pool.query("SELECT * FROM users WHERE handle = $1", [handle]);
+    const userQuery = await pool.query(
+      "SELECT * FROM users WHERE handle = $1",
+      [handle]
+    );
 
     if (userQuery.rows.length === 0) {
-      return res.status(400).json({ success: false, message: "Invalid handle or password" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid handle or password" });
     }
 
     const user = userQuery.rows[0];
     const correct_pwd = await bcrypt.compare(password, user.password_hash);
     if (!correct_pwd) {
-      return res.status(400).json({ success: false, message: "Invalid handle or password" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid handle or password" });
     }
 
     if (rememberMe) req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
@@ -343,7 +411,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-const { OAuth2Client } = require('google-auth-library');
+const { OAuth2Client } = require("google-auth-library");
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 app.post("/auth/google", async (req, res) => {
@@ -358,7 +426,9 @@ app.post("/auth/google", async (req, res) => {
     const email = payload.email;
     const handle = email.split("@")[0]; // fallback if handle isn't provided
 
-    let user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    let user = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
 
     if (user.rows.length === 0) {
       // Create user
@@ -379,13 +449,11 @@ app.post("/auth/google", async (req, res) => {
   }
 });
 
-
-
 app.get("/isLoggedIn", async (req, res) => {
   if (req.session.user) {
     return res
-    .status(200)
-    .json({ message: "Logged in", handle: req.session.user.handle });
+      .status(200)
+      .json({ message: "Logged in", handle: req.session.user.handle });
   } else {
     return res.status(400).json({ message: "Not logged in" });
   }
@@ -394,13 +462,19 @@ app.get("/isLoggedIn", async (req, res) => {
 app.post("/reset-password", async (req, res) => {
   const { token, newPassword } = req.body;
   try {
-    const userResult = await pool.query("SELECT * FROM users WHERE reset_token = $1 AND reset_expires > NOW()", [token]);
+    const userResult = await pool.query(
+      "SELECT * FROM users WHERE reset_token = $1 AND reset_expires > NOW()",
+      [token]
+    );
     if (userResult.rows.length === 0) {
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    await pool.query("UPDATE users SET password_hash = $1, reset_token = NULL, reset_expires = NULL WHERE id = $2", [hashed, userResult.rows[0].id]);
+    await pool.query(
+      "UPDATE users SET password_hash = $1, reset_token = NULL, reset_expires = NULL WHERE id = $2",
+      [hashed, userResult.rows[0].id]
+    );
 
     res.status(200).json({ message: "Password updated successfully" });
   } catch (err) {
@@ -411,21 +485,24 @@ app.post("/reset-password", async (req, res) => {
 
 app.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
-  const token = require('crypto').randomBytes(32).toString("hex");
+  const token = require("crypto").randomBytes(32).toString("hex");
 
   try {
-    await pool.query("UPDATE users SET reset_token = $1, reset_expires = NOW() + INTERVAL '1 hour' WHERE email = $2", [token, email]);
+    await pool.query(
+      "UPDATE users SET reset_token = $1, reset_expires = NOW() + INTERVAL '1 hour' WHERE email = $2",
+      [token, email]
+    );
 
     // TODO: Email the token as reset link: http://localhost:3000/reset-password?token=...
-    console.log(`Reset link: http://localhost:3000/reset-password?token=${token}`);
+    console.log(
+      `Reset link: http://localhost:3000/reset-password?token=${token}`
+    );
     res.status(200).json({ message: "Password reset link has been sent." });
   } catch (err) {
     console.error("Error sending reset link:", err);
     res.status(500).json({ message: "Error processing request" });
   }
 });
-
-
 
 app.post("/logout", (req, res) => {
   req.session.destroy((err) => {
@@ -470,11 +547,11 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
        WHERE p.problem_id = $1`,
       [problemId]
     );
-    
+
     if (problem.rows.length === 0) {
       return res.status(404).json({ error: "Problem not found" });
     }
-    
+
     let examples = [];
     if (problem.rows[0].examples) {
       try {
@@ -512,7 +589,6 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
     console.error("Error fetching problem:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-
 });
 
 // Register or deregister for a contest
@@ -586,8 +662,6 @@ app.get("/myRegistrations", isAuthenticated, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch registrations" });
   }
 });
-
-
 
 app.get("/contest/:id", isAuthenticated, async (req, res) => {
   const contestId = req.params.id;

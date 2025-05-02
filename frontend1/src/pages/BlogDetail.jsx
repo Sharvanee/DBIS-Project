@@ -10,6 +10,7 @@ const BlogDetail = () => {
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
     const [error, setError] = useState("");
+    const [userReaction, setUserReaction] = useState(null); // 'like', 'dislike', or null
 
     useEffect(() => {
         const fetchData = async () => {
@@ -24,6 +25,16 @@ const BlogDetail = () => {
                 if (commentsRes.ok) {
                     const commentsData = await commentsRes.json();
                     setComments(commentsData);
+                }
+
+                const reactionRes = await fetch(`${apiUrl}/blogs/${id}/user-reaction`, {
+                    credentials: "include",
+                });
+                if (reactionRes.ok) {
+                    const { is_like } = await reactionRes.json();
+                    if (is_like === true) setUserReaction("like");
+                    else if (is_like === false) setUserReaction("dislike");
+                    else setUserReaction(null);
                 }
             } catch (err) {
                 console.error("Error fetching blog or comments:", err);
@@ -68,12 +79,19 @@ const BlogDetail = () => {
 
     const handleReaction = async (is_like) => {
         try {
+            // If user is clicking on the same reaction, remove it
+            if (userReaction === (is_like ? "like" : "dislike")) {
+                is_like = null;
+            }
+
             await fetch(`${apiUrl}/blogs/${id}/react`, {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ is_like }),
             });
+
+            setUserReaction(is_like ? (is_like ? "like" : "dislike") : null); // Update the reaction state
 
             const res = await fetch(`${apiUrl}/blogs/${id}`, { credentials: "include" });
             if (res.ok) {
@@ -98,8 +116,18 @@ const BlogDetail = () => {
                 </div>
 
                 <div className="reactions">
-                    <button onClick={() => handleReaction(true)}>👍 Like ({blog.likes || 0})</button>
-                    <button onClick={() => handleReaction(false)}>👎 Dislike ({blog.dislikes || 0})</button>
+                    <button
+                        className={userReaction === "like" ? "like-button active" : "like-button"}
+                        onClick={() => handleReaction(true)}
+                    >
+                        👍 Like ({blog.likes || 0})
+                    </button>
+                    <button
+                        className={userReaction === "dislike" ? "dislike-button active" : "dislike-button"}
+                        onClick={() => handleReaction(false)}
+                    >
+                        👎 Dislike ({blog.dislikes || 0})
+                    </button>
                 </div>
 
                 <div className="comments">
