@@ -519,7 +519,7 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
 app.post("/contest/:id/register", isAuthenticated, async (req, res) => {
   const userId = req.session.user.id;
   const contestId = req.params.id;
-
+  console.log("register for Contest ID:", contestId);
   try {
     // Check if the user is already registered
     const result = await pool.query(

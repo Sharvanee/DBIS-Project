@@ -1,8 +1,12 @@
+DROP TABLE IF EXISTS blog_reactions CASCADE;
+DROP TABLE IF EXISTS comments CASCADE;
+DROP TABLE IF EXISTS blogs CASCADE;
 DROP TABLE IF EXISTS submissions CASCADE;
 DROP TABLE IF EXISTS problem_tags CASCADE;
 DROP TABLE IF EXISTS tags CASCADE;
 DROP TABLE IF EXISTS solved_problems CASCADE;
 DROP TABLE IF EXISTS problems CASCADE;
+DROP TABLE IF EXISTS contest_registrations CASCADE;
 DROP TABLE IF EXISTS contests CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
@@ -22,7 +26,6 @@ CREATE TABLE users (
   state TEXT
 );
 
-
 CREATE TABLE contests (
   contest_id SERIAL PRIMARY KEY,
   contest_name VARCHAR(255) NOT NULL,
@@ -34,7 +37,6 @@ CREATE TABLE contests (
   created_by INTEGER REFERENCES users(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
 
 CREATE TABLE problems (
   problem_id VARCHAR(10) UNIQUE NOT NULL,
@@ -93,7 +95,7 @@ CREATE TABLE blogs (
   author_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  tags TEXT[], -- optional: array of tags
+  tags TEXT[],
   is_published BOOLEAN DEFAULT true
 );
 
@@ -109,75 +111,64 @@ CREATE TABLE blog_reactions (
   id SERIAL PRIMARY KEY,
   blog_id INTEGER REFERENCES blogs(id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  is_like BOOLEAN NOT NULL, -- true = like, false = dislike
-  UNIQUE (blog_id, user_id) -- one reaction per user per blog
+  is_like BOOLEAN NOT NULL,
+  UNIQUE (blog_id, user_id)
 );
 
--- Insert sample coding contest-related blogs
+-- ✅ Insert Sample Users (required for author_id and user_id references)
+INSERT INTO users (handle, email, password_hash) VALUES
+('user1', 'user1@example.com', 'hash1'), -- id = 1
+('user2', 'user2@example.com', 'hash2'), -- id = 2
+('user3', 'user3@example.com', 'hash3'); -- id = 3
+
+-- ✅ Insert Blogs
 INSERT INTO blogs (title, content, author_id, created_at, updated_at, tags, is_published) VALUES
 (
   'Top 5 Strategies for Winning ICPC',
-  'The International Collegiate Programming Contest (ICPC) is one of the most prestigious competitive programming contests in the world. In this blog, we explore the top 5 strategies that can help you perform well in ICPC. From mastering algorithms to managing time effectively, these strategies can make all the difference.',
-  1,
-  NOW(), NOW(),
+  'The International Collegiate Programming Contest (ICPC) is one of the most prestigious competitive programming contests in the world. In this blog, we explore the top 5 strategies that can help you perform well in ICPC.',
+  1, NOW(), NOW(),
   ARRAY['ICPC', 'Strategies', 'Competitive Programming'],
   true
 ),
 (
   'The Importance of Data Structures in Competitive Programming',
-  'Data structures are the foundation of any competitive programmer’s toolkit. This blog dives deep into the most commonly used data structures in competitive programming, including arrays, stacks, queues, and trees, and how mastering them can give you an edge in coding contests.',
-  2,
-  NOW(), NOW(),
+  'Data structures are the foundation of any competitive programmer’s toolkit.',
+  2, NOW(), NOW(),
   ARRAY['Data Structures', 'Algorithms', 'Competitive Programming'],
   true
 ),
 (
   'How to Prepare for Google Code Jam',
-  'Google Code Jam is a global competitive programming contest that attracts thousands of participants every year. In this blog, we discuss how to prepare for this intense competition, including practicing problems, learning algorithms, and how to approach problems under time constraints.',
-  3,
-  NOW(), NOW(),
+  'Google Code Jam is a global competitive programming contest.',
+  3, NOW(), NOW(),
   ARRAY['Google Code Jam', 'Preparation', 'Competitive Programming'],
   true
 ),
 (
   'A Beginner’s Guide to Dynamic Programming',
-  'Dynamic Programming (DP) is a powerful technique often used in coding contests. In this blog, we provide a beginner-friendly guide to understanding DP, including tips on how to identify DP problems, build recurrence relations, and use memoization to optimize solutions.',
-  1,
-  NOW(), NOW(),
+  'Dynamic Programming (DP) is a powerful technique often used in coding contests.',
+  1, NOW(), NOW(),
   ARRAY['Dynamic Programming', 'Algorithms', 'Competitive Programming'],
   true
 ),
 (
   'Common Mistakes to Avoid in Coding Contests',
-  'Even the best competitive programmers make mistakes during coding contests. This blog outlines common mistakes that contestants make, such as not managing time properly, misinterpreting problems, and making off-by-one errors, and provides tips on how to avoid them.',
-  2,
-  NOW(), NOW(),
+  'Even the best competitive programmers make mistakes.',
+  2, NOW(), NOW(),
   ARRAY['Mistakes', 'Competitive Programming', 'Best Practices'],
   true
 );
 
--- Comments for blog_id 1
+-- ✅ Insert Comments
 INSERT INTO comments (blog_id, user_id, content, created_at) VALUES
 (1, 2, 'Great tips! Time management really helped me in last years ICPC.', NOW()),
-(1, 3, 'Thanks for sharing! Practicing mock contests is key.', NOW());
-
--- Comments for blog_id 2
-INSERT INTO comments (blog_id, user_id, content, created_at) VALUES
-(2, 1, 'Stacks and queues always trip me up. This was helpful.', NOW());
-
--- Comments for blog_id 3
-INSERT INTO comments (blog_id, user_id, content, created_at) VALUES
-(3, 2, 'I didnt know about the past archives. Thanks for the prep guide!', NOW());
-
--- Comments for blog_id 4
-INSERT INTO comments (blog_id, user_id, content, created_at) VALUES
-(4, 3, 'Dynamic programming finally makes sense now. Nice examples!', NOW());
-
--- Comments for blog_id 5
-INSERT INTO comments (blog_id, user_id, content, created_at) VALUES
+(1, 3, 'Thanks for sharing! Practicing mock contests is key.', NOW()),
+(2, 1, 'Stacks and queues always trip me up. This was helpful.', NOW()),
+(3, 2, 'I didnt know about the past archives. Thanks for the prep guide!', NOW()),
+(4, 3, 'Dynamic programming finally makes sense now. Nice examples!', NOW()),
 (5, 1, 'I always forget to read constraints. Thanks for the reminder.', NOW());
 
--- Likes (is_like = true), Dislikes (is_like = false)
+-- ✅ Insert Reactions
 INSERT INTO blog_reactions (blog_id, user_id, is_like) VALUES
 (1, 2, true),
 (1, 3, true),

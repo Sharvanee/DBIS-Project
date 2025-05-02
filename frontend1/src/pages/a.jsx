@@ -193,7 +193,7 @@ const ContestList = () => {
                       </td>
                       <td>{formatDateOrTime(start, true)}</td>
                       <td>{formatDateOrTime(end, true)}</td>
-
+                    
                       {showSolved && (
                         <td>
                           {isRegistered ? (
@@ -217,21 +217,16 @@ const ContestList = () => {
                       )}
                       <td>
                         {title.includes("Upcoming") ? (
-                          <button
-                            className={`action-button ${isRegistered ? "deregister" : "register"}`}
-                            onClick={() => handleRegister(contest.contest_id)}
-                          >
+                          <button className={`action-button ${isRegistered ? "deregister" : "register"}`} onClick={() => handleRegister(contest.contest_id)}>
                             {isRegistered ? "Deregister" : "Register"}
                           </button>
-                        ) : (
-                          isRegistered ? (
+                        ) : {isRegistered ? (
                             <span style={{ color: "green", fontWeight: "bold" }}>Registered</span>
-                          ) : (
+                        ) : (
                             <span style={{ color: "gray" }}>Closed</span>
-                          )
                         )}
+                        }
                       </td>
-
                     </tr>
                   );
                 })}
