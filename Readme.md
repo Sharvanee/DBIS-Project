@@ -6,7 +6,7 @@ The following needs to be installed:
 - In the backend directory, execute the following 2 commands: 
     - npm install
     - npm init -y
-    - npm install bcrypt express pg express-session body-parser cors ajv multer @google/generative-ai
+    - npm install bcrypt express pg express-session body-parser cors ajv multer @google/generative-ai google-auth-library
     - nvm install --lts
     - nvm use --lts
     - npm install google-auth-library

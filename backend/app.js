@@ -519,7 +519,7 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
 app.post("/contest/:id/register", isAuthenticated, async (req, res) => {
   const userId = req.session.user.id;
   const contestId = req.params.id;
-  console.log("register for Contest ID:", contestId);
+
   try {
     // Check if the user is already registered
     const result = await pool.query(
@@ -547,6 +547,26 @@ app.post("/contest/:id/register", isAuthenticated, async (req, res) => {
   } catch (err) {
     console.error("Contest registration error:", err);
     res.status(500).json({ error: "Failed to register or deregister" });
+  }
+});
+
+app.get("/contest/:id/isRegistered", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const contestId = req.params.id;
+
+    if (!userId) return res.status(401).json({ isRegistered: false });
+
+    const result = await pool.query(
+      `SELECT 1 FROM contest_registrations WHERE user_id = $1 AND contest_id = $2`,
+      [userId, contestId]
+    );
+
+    const isRegistered = result.rowCount > 0;
+    res.json({ isRegistered });
+  } catch (err) {
+    console.error("Error checking registration:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -600,7 +620,7 @@ app.get("/contest/:id/stats", isAuthenticated, async (req, res) => {
   const contestId = req.params.id;
 
   try {
-    // Problem-level stats
+    // ✅ Problem-level stats
     const problemStatsQuery = await pool.query(
       `
       SELECT 
@@ -616,37 +636,36 @@ app.get("/contest/:id/stats", isAuthenticated, async (req, res) => {
     );
 
     const problemStats = {};
-    problemStatsQuery.rows.forEach(row => {
+    problemStatsQuery.rows.forEach((row) => {
       problemStats[row.problem_id] = {
         total_submissions: parseInt(row.total_submissions),
-        accepted_submissions: parseInt(row.accepted_submissions)
+        accepted_submissions: parseInt(row.accepted_submissions),
       };
     });
 
-    // User-level leaderboard
+    // ✅ User-level leaderboard including all registered users
     const leaderboardQuery = await pool.query(
       `
       SELECT
-        s.user_id,
+        r.user_id,
         u.handle,
-        COUNT(DISTINCT s.problem_id) AS solved_count,
-        MIN(s.created_at) AS first_solved_at
-      FROM submissions s
-      INNER JOIN problems p ON p.problem_id = s.problem_id
-      INNER JOIN users u ON u.id = s.user_id
-      WHERE p.contest_id = $1 AND s.verdict = 'Accepted'
-      GROUP BY s.user_id, u.handle
-      ORDER BY solved_count DESC, first_solved_at ASC
+        COUNT(DISTINCT CASE WHEN s.verdict = 'Accepted' THEN s.problem_id END) AS solved_count,
+        MIN(CASE WHEN s.verdict = 'Accepted' THEN s.created_at END) AS first_solved_at
+      FROM contest_registrations r
+      INNER JOIN users u ON u.id = r.user_id
+      LEFT JOIN submissions s ON s.user_id = r.user_id
+        AND s.problem_id IN (SELECT problem_id FROM problems WHERE contest_id = $1)
+      WHERE r.contest_id = $1
+      GROUP BY r.user_id, u.handle
+      ORDER BY solved_count DESC, first_solved_at ASC NULLS LAST
       `,
       [contestId]
     );
-    
 
     res.json({
       problemStats,
-      userLeaderboard: leaderboardQuery.rows
+      userLeaderboard: leaderboardQuery.rows,
     });
-
   } catch (err) {
     console.error("Error fetching contest stats:", err);
     res.status(500).json({ error: "Internal Server Error" });

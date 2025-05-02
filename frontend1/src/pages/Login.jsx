@@ -31,44 +31,44 @@ const Login = () => {
     checkStatus();
   }, [navigate]);
 
-  const handleGoogleResponse = useCallback(async (response) => {
-    try {
-      const googleToken = response.credential;
+  // const handleGoogleResponse = useCallback(async (response) => {
+  //   try {
+  //     const googleToken = response.credential;
   
-      const res = await fetch(`${apiUrl}/auth/google`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ token: googleToken }),
-      });
+  //     const res = await fetch(`${apiUrl}/auth/google`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       credentials: "include",
+  //       body: JSON.stringify({ token: googleToken }),
+  //     });
   
-      if (res.ok) {
-        navigate("/dashboard");
-      } else {
-        const data = await res.json();
-        setError(data.message || "Google Sign-In failed.");
-      }
-    } catch (err) {
-      console.error("Google Sign-In error:", err);
-      setError("An error occurred during Google Sign-In.");
-    }
-  }, [navigate]);
+  //     if (res.ok) {
+  //       navigate("/dashboard");
+  //     } else {
+  //       const data = await res.json();
+  //       setError(data.message || "Google Sign-In failed.");
+  //     }
+  //   } catch (err) {
+  //     console.error("Google Sign-In error:", err);
+  //     setError("An error occurred during Google Sign-In.");
+  //   }
+  // }, [navigate]);
 
-  useEffect(() => {
-    if (window.google) {
-      google.accounts.id.initialize({
-        client_id: "524012542926-6bi2laama2478pjoilp4tthp40vf7fer.apps.googleusercontent.com",
-        callback: handleGoogleResponse,
-      });
+  // useEffect(() => {
+  //   if (window.google) {
+  //     google.accounts.id.initialize({
+  //       client_id: "524012542926-6bi2laama2478pjoilp4tthp40vf7fer.apps.googleusercontent.com",
+  //       callback: handleGoogleResponse,
+  //     });
   
-      google.accounts.id.renderButton(
-        document.getElementById("google-signin-button"),
-        { theme: "outline", size: "large" }
-      );
-    }
-  }, [handleGoogleResponse]);
+  //     google.accounts.id.renderButton(
+  //       document.getElementById("google-signin-button"),
+  //       { theme: "outline", size: "large" }
+  //     );
+  //   }
+  // }, [handleGoogleResponse]);
   
 
   const handleChange = (e) => {

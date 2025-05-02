@@ -170,7 +170,6 @@ const ContestList = () => {
                   <th>{title.includes("Upcoming") || title.includes("Active") ? "Ends" : "Ended"}</th>
                   {showSolved && <th>Problems Solved</th>}
                   {showActions && <th>Action</th>}
-                  <th>Participate</th>
                 </tr>
               </thead>
               <tbody>
@@ -193,7 +192,6 @@ const ContestList = () => {
                       </td>
                       <td>{formatDateOrTime(start, true)}</td>
                       <td>{formatDateOrTime(end, true)}</td>
-
                       {showSolved && (
                         <td>
                           {isRegistered ? (
@@ -215,23 +213,6 @@ const ContestList = () => {
                           </button>
                         </td>
                       )}
-                      <td>
-                        {title.includes("Upcoming") ? (
-                          <button
-                            className={`action-button ${isRegistered ? "deregister" : "register"}`}
-                            onClick={() => handleRegister(contest.contest_id)}
-                          >
-                            {isRegistered ? "Deregister" : "Register"}
-                          </button>
-                        ) : (
-                          isRegistered ? (
-                            <span style={{ color: "green", fontWeight: "bold" }}>Registered</span>
-                          ) : (
-                            <span style={{ color: "gray" }}>Closed</span>
-                          )
-                        )}
-                      </td>
-
                     </tr>
                   );
                 })}
