@@ -42,7 +42,8 @@ const ContestList = () => {
 
         const contestsData = await contestRes.json();
         const registeredData = await registrationRes.json();
-        const solvedCounts = await solveCountRes.json();
+        const solvedMap = await solveCountRes.json();
+        setSolvedCountMap(solvedMap);
         const problemCounts = await problemCountRes.json();
 
         const contestsWithCounts = contestsData.map((contest) => ({
@@ -52,7 +53,6 @@ const ContestList = () => {
 
         setContests(contestsWithCounts);
         setRegisteredContestIds(registeredData.map((reg) => reg.contest_id));
-        setSolvedCountMap(solvedCounts);
       } catch (err) {
         console.error("Failed to fetch data:", err);
       } finally {
@@ -168,7 +168,6 @@ const ContestList = () => {
                   <th>Title</th>
                   <th>{title.includes("Upcoming") || title.includes("Active") ? "Starts" : "Started"}</th>
                   <th>{title.includes("Upcoming") || title.includes("Active") ? "Ends" : "Ended"}</th>
-                  {showSolved && <th>Problems Solved</th>}
                   {showActions && <th>Action</th>}
                 </tr>
               </thead>
@@ -192,17 +191,6 @@ const ContestList = () => {
                       </td>
                       <td>{formatDateOrTime(start, true)}</td>
                       <td>{formatDateOrTime(end, true)}</td>
-                      {showSolved && (
-                        <td>
-                          {isRegistered ? (
-                            <span>{solved}/{total}</span>
-                          ) : (
-                            <span style={{ color: "gray", fontStyle: "italic" }}>
-                              Not registered
-                            </span>
-                          )}
-                        </td>
-                      )}
                       {showActions && (
                         <td>
                           <button

@@ -586,7 +586,7 @@ app.get("/problem/:id", isAuthenticated, async (req, res) => {
       contest_duration: problem.rows[0].contest_duration,
       model_solution: problem.rows[0].model_solution,
     });
-    
+
   } catch (err) {
     console.error("Error fetching problem:", err);
     res.status(500).json({ error: "Internal server error" });
@@ -627,6 +627,60 @@ app.post("/contest/:id/register", isAuthenticated, async (req, res) => {
     res.status(500).json({ error: "Failed to register or deregister" });
   }
 });
+
+app.post("/contest/:id/rate", async (req, res) => {
+  const { leaderboard } = req.body;
+  const contestId = req.params.id;
+
+  if (!Array.isArray(leaderboard) || leaderboard.length === 0) {
+    return res.status(400).send("Invalid leaderboard");
+  }
+
+  try {
+    // Fetch contest data from the database
+    const contestResult = await pool.query("SELECT * FROM contests WHERE id = $1", [contestId]);
+    const contest = contestResult.rows[0];
+
+    if (!contest) {
+      return res.status(404).send("Contest not found");
+    }
+
+    if (contest.rated) {
+      return res.status(400).send("Contest already rated");
+    }
+
+    const base = 300; // Increased base value for a larger boost
+
+    // Iterate over leaderboard and update user ratings
+    for (let i = 0; i < leaderboard.length; i++) {
+      const userId = leaderboard[i].user_id;
+
+      // Fetch user data
+      const userResult = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
+      const user = userResult.rows[0];
+
+      if (!user) continue;
+
+      // Calculate boost based on rank (higher rank = more points)
+      const boost = Math.round(base / (i + 1));
+      const newRating = (user.rating || 1500) + boost; // Default to 1500 if no rating exists
+
+      // Update user's rating
+      await pool.query("UPDATE users SET rating = $1 WHERE id = $2", [newRating, userId]);
+    }
+
+    // Mark contest as rated
+    await pool.query("UPDATE contests SET rated = true WHERE id = $1", [contestId]);
+
+    res.send("Ratings updated successfully");
+  } catch (err) {
+    console.error("Rating update error:", err);
+    res.status(500).send("Server error");
+  }
+});
+
+
+
 
 app.get("/contest/:id/isRegistered", isAuthenticated, async (req, res) => {
   try {
@@ -722,18 +776,23 @@ app.get("/contest/:id/stats", isAuthenticated, async (req, res) => {
     // ✅ User-level leaderboard including all registered users
     const leaderboardQuery = await pool.query(
       `
-      SELECT
-        r.user_id,
-        u.handle,
-        COUNT(DISTINCT CASE WHEN s.verdict = 'Accepted' THEN s.problem_id END) AS solved_count,
-        MIN(CASE WHEN s.verdict = 'Accepted' THEN s.created_at END) AS first_solved_at
-      FROM contest_registrations r
-      INNER JOIN users u ON u.id = r.user_id
-      LEFT JOIN submissions s ON s.user_id = r.user_id
-        AND s.problem_id IN (SELECT problem_id FROM problems WHERE contest_id = $1)
-      WHERE r.contest_id = $1
-      GROUP BY r.user_id, u.handle
-      ORDER BY solved_count DESC, first_solved_at ASC NULLS LAST
+SELECT
+  r.user_id,
+  u.handle,
+  COUNT(DISTINCT CASE WHEN s.verdict = 'Accepted' THEN s.problem_id END) AS solved_count,
+  MIN(CASE WHEN s.verdict = 'Accepted' THEN s.created_at END) AS first_solved_at,
+  JSON_OBJECT_AGG(
+    s.problem_id,
+    CASE WHEN s.verdict = 'Accepted' THEN s.created_at ELSE NULL END
+  ) FILTER (WHERE s.verdict = 'Accepted' AND s.problem_id IS NOT NULL) AS solved_times
+FROM contest_registrations r
+INNER JOIN users u ON u.id = r.user_id
+LEFT JOIN submissions s ON s.user_id = r.user_id
+  AND s.problem_id IN (SELECT problem_id FROM problems WHERE contest_id = $1)
+WHERE r.contest_id = $1
+GROUP BY r.user_id, u.handle
+ORDER BY solved_count DESC, first_solved_at ASC NULLS LAST
+
       `,
       [contestId]
     );
@@ -1104,8 +1163,8 @@ app.post("/runAllExamples", async (req, res) => {
             actualOutput
           });
         };
-        
-        
+
+
 
         switch (language) {
           case "cpp": {
@@ -1260,19 +1319,19 @@ app.post("/submit", isAuthenticated, async (req, res) => {
         const timeoutLimit = 3000;
         let verdict = "Accepted";
         let timedOut = false;
-    
+
         const input = testcase.input.replace(/\r\n/g, '\n').trim();
         const expectedOutput = (testcase.output || "").replace(/\r\n/g, '\n').trim();
-    
+
         const timeout = setTimeout(() => {
           timedOut = true;
           verdict = "Time Limit Exceeded";
           resolve({ status: verdict, input, expected: expectedOutput, actual: "" });
         }, timeoutLimit);
-    
+
         let output = "", error = "";
         const tempID = Date.now();
-    
+
         const finish = (actualOutput) => {
           if (timedOut) return;
           clearTimeout(timeout);
@@ -1280,27 +1339,27 @@ app.post("/submit", isAuthenticated, async (req, res) => {
           else if (actualOutput !== expectedOutput) verdict = "Wrong Answer";
           resolve({ status: verdict, input, expected: expectedOutput, actual: actualOutput });
         };
-    
+
         switch (language) {
           case "cpp": {
             const execName = `temp_exec_${tempID}`;
             const compileCommand = `g++ ${filePath} -o ${execName}`;
-    
+
             exec(compileCommand, (compileErr) => {
               if (compileErr) {
                 clearTimeout(timeout);
                 return resolve({ status: "Runtime Error", input, expected: expectedOutput, actual: "" });
               }
-    
+
               const child = spawn(`./${execName}`);
               let actual = "";
-    
+
               child.stdin.on("error", (err) => {
                 if (err.code === "EPIPE") {
                   console.error("C++ stdin EPIPE (closed pipe)");
                 }
               });
-    
+
               if (child.stdin.writable) {
                 try {
                   child.stdin.write(input);
@@ -1309,7 +1368,7 @@ app.post("/submit", isAuthenticated, async (req, res) => {
                   console.error("Error writing to C++ stdin:", e.message);
                 }
               }
-    
+
               child.stdout.on("data", (data) => output += data.toString());
               child.stderr.on("data", (data) => error += data.toString());
               child.on("close", () => {
@@ -1319,16 +1378,16 @@ app.post("/submit", isAuthenticated, async (req, res) => {
             });
             break;
           }
-    
+
           case "python": {
             const child = spawn("python3", [filePath]);
-    
+
             child.stdin.on("error", (err) => {
               if (err.code === "EPIPE") {
                 console.error("Python stdin EPIPE (closed pipe)");
               }
             });
-    
+
             if (child.stdin.writable) {
               try {
                 child.stdin.write(input);
@@ -1337,7 +1396,7 @@ app.post("/submit", isAuthenticated, async (req, res) => {
                 console.error("Error writing to Python stdin:", e.message);
               }
             }
-    
+
             child.stdout.on("data", (data) => output += data.toString());
             child.stderr.on("data", (data) => error += data.toString());
             child.on("close", () => {
@@ -1345,26 +1404,26 @@ app.post("/submit", isAuthenticated, async (req, res) => {
             });
             break;
           }
-    
+
           case "java": {
             const className = "Main";
             const javaFilePath = path.join(__dirname, `${className}.java`);
             fs.writeFileSync(javaFilePath, code);
-    
+
             exec(`javac ${javaFilePath}`, (compileErr) => {
               if (compileErr) {
                 clearTimeout(timeout);
                 return resolve({ status: "Runtime Error", input, expected: expectedOutput, actual: "" });
               }
-    
+
               const child = spawn("java", ["-cp", __dirname, className]);
-    
+
               child.stdin.on("error", (err) => {
                 if (err.code === "EPIPE") {
                   console.error("Java stdin EPIPE (closed pipe)");
                 }
               });
-    
+
               if (child.stdin.writable) {
                 try {
                   child.stdin.write(input);
@@ -1373,7 +1432,7 @@ app.post("/submit", isAuthenticated, async (req, res) => {
                   console.error("Error writing to Java stdin:", e.message);
                 }
               }
-    
+
               child.stdout.on("data", (data) => output += data.toString());
               child.stderr.on("data", (data) => error += data.toString());
               child.on("close", () => {
@@ -1384,14 +1443,14 @@ app.post("/submit", isAuthenticated, async (req, res) => {
             });
             break;
           }
-    
+
           default:
             clearTimeout(timeout);
             resolve({ status: "Runtime Error", input, expected: expectedOutput, actual: "" });
         }
       });
     };
-    
+
 
     for (const testcase of testcases) {
       const result = await runTestcase(testcase);

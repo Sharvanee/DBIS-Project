@@ -91,8 +91,27 @@ const Contest = () => {
 
       if (diff <= 0) {
         setCountdown("Contest ended");
+      
+        // 🔽 NEW: Send leaderboard to backend
+        if (userLeaderboard.length > 0 && contest && !contest.rated) {
+          fetch(`${apiUrl}/contest/${contest._id}/rate`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ leaderboard: userLeaderboard }),
+          })
+            .then((res) => {
+              if (!res.ok) throw new Error("Rating update failed");
+              console.log("Ratings updated successfully.");
+            })
+            .catch((err) => console.error("Rating update error:", err));
+        }
+      
         return;
       }
+      
 
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -177,7 +196,9 @@ const Contest = () => {
                 <th>Rank</th>
                 <th>User</th>
                 <th>Problems Solved</th>
-                <th>First Solved At</th>
+                {contest.problems.map((p) => (
+                  <th key={p.id}>Problem {p.title}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -186,12 +207,14 @@ const Contest = () => {
                   <td>{index + 1}</td>
                   <td>{user.handle}</td>
                   <td>{user.solved_count}</td>
-                  <td>
-  {user.first_solved_at
-    ? new Date(user.first_solved_at).toLocaleString()
-    : "—"}
-</td>
-
+                  {contest.problems.map((problem) => {
+                    const solvedAt = user.solved_times?.[problem.id];
+                    return (
+                      <td key={problem.id}>
+                        {solvedAt ? new Date(solvedAt).toLocaleString() : "—"}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>

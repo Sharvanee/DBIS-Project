@@ -199,7 +199,7 @@ const AddContest = () => {
 
                 <div className="row">
                   {[
-                    ["difficulty", "Difficulty (1-10)", "number", "1", "10"],
+                    ["difficulty", "Difficulty (500-3000)", "number", "500", "3000"],
                     ["time_limit", "Time Limit (ms)", "number"],
                     ["memory_limit", "Memory Limit (MB)", "number"],
                     ["testset_size", "Testset Size", "number"],
