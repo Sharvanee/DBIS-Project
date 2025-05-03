@@ -1,112 +1,192 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Roboto:wght@300;500;700&display=swap');
 
 body, html {
-    margin: 0;
-    padding: 0;
-    font-family: 'Roboto', sans-serif;
-    height: 100%;
-    background-color: #f9f9f9;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  height: 100%;
+  background: linear-gradient(120deg, #0f172a, #1e293b);
+  color: #e2e8f0;
+  overflow-x: hidden;
 }
 
 .homepage {
-    height: 100vh;
-    width: 100%;
-    background-image: linear-gradient(#e8e8e8 1px, transparent 1px), 
-                                        linear-gradient(90deg, #e8e8e8 1px, transparent 1px);
-    background-size: 40px 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 4rem 2rem;
-    padding-top: 10rem; /* Add gap at the top */
-    box-sizing: border-box;
-}
-
-.site-logo {
-    height: 450px;
-    width: auto;
-}
-
-.main-heading {
-    font-size: 5rem;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 700;
-    color: white;
-    margin: 0;
-    text-align: center;
-    max-width: 900px;
-    background-color: #1a1a1a; /* Darker shade of black */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 450px; /* Same height as the logo */
-    padding: 0 2rem;
-    box-sizing: border-box;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 5rem 2rem;
+  box-sizing: border-box;
+  position: relative;
+  background: radial-gradient(circle at top left, #1e40af, transparent 40%),
+              radial-gradient(circle at bottom right, #059669, transparent 50%);
 }
 
 .top-box {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0; /* Remove gap */
-    flex-wrap: nowrap; /* Ensure no wrapping */
-    height: 40%;
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.site-logo {
+  width: 400px;
+  max-width: 100%;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6));
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+  100% { transform: translateY(0px); }
+}
+
+.main-heading {
+  font-size: 4.2rem;
+  font-weight: 900;
+  line-height: 1.2;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(14px);
+  border-radius: 20px;
+  padding: 2rem 3rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  text-align: left;
+  max-width: 800px;
+  transition: transform 0.4s ease;
+}
+
+.main-heading:hover {
+  transform: translateY(-6px) scale(1.02);
 }
 
 .bottom-section {
-    text-align: center;
-    padding: 1rem;
+  text-align: center;
+  margin-top: 4rem;
 }
 
 .sub-heading {
-    font-family: 'Roboto', sans-serif;
-    font-size: 4.5rem; /* Increased font size */
-    font-weight: 700;
-    color: #3b82f6;
-    margin-bottom: 0.5em; /* Reduced margin to move it up */
+  font-size: 3rem;
+  color: #22d3ee;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.4);
 }
 
 .description {
-    font-size: 2rem; /* Increased font size */
-    color: #555555;
-    margin-bottom: 1.5rem; /* Reduced margin to move it up */
-    max-width: 1400px;
-    margin-left: auto;
-    margin-right: auto;
+  font-size: 1.3rem;
+  color: #cbd5e1;
+  max-width: 1000px;
+  margin: 0 auto 2rem;
+  line-height: 1.8;
+  background: rgba(255,255,255,0.05);
+  padding: 1.5rem;
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
 }
 
 .buttons {
-    display: flex;
-    justify-content: center;
-    gap: 1.2rem; /* Increased gap between buttons */
-    flex-wrap: wrap;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
 }
 
 .sign-in, .explore {
-    font-size: 1.1rem; /* Increased font size */
-    font-weight: 500;
-    padding: 1rem 2.2rem; /* Increased padding for larger buttons */
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s ease, color 0.3s ease;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 1rem 2.5rem;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  color: white;
+  background: linear-gradient(135deg, #3b82f6, #9333ea);
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 24px rgba(147, 51, 234, 0.4);
 }
 
-.sign-in {
-    background-color: #3b82f6;
-    color: white;
+.sign-in:hover, .explore:hover {
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 32px rgba(147, 51, 234, 0.5);
 }
 
-.sign-in:hover {
-    background-color: #2563eb;
+/* Contest Status Styles */
+.active, .past {
+  font-weight: 600;
+  border-radius: 16px;
+  padding: 0.75rem 1.5rem;
+  margin: 1rem;
+  display: inline-block;
+  transition: all 0.3s ease-in-out;
 }
 
-.explore {
-    background-color: #3b82f6;
-    color: white;
+.active {
+  background: rgba(16, 185, 129, 0.15);
+  border: 2px solid #10b981;
+  color: #34d399;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
 }
 
-.explore:hover {
-    background-color: #2563eb;
+.past {
+  background: rgba(239, 68, 68, 0.15);
+  border: 2px solid #ef4444;
+  color: #f87171;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.2);
+}
+
+.active:hover, .past:hover {
+  transform: scale(1.05);
+}
+
+/* Blogs Section */
+.blogs {
+  width: 100%;
+  max-width: 1000px;
+  margin: 5rem auto 3rem;
+  padding: 0 2rem;
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.blogs > div {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(12px);
+  padding: 1.5rem;
+  border-radius: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+}
+
+.blogs > div:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+}
+
+.blogs img {
+  display: none;
+}
+
+.blogs a {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #38bdf8;
+  text-decoration: none;
+}
+
+.blogs a:hover {
+  text-decoration: underline;
+}
+
+.blogs p {
+  font-size: 1rem;
+  color: #e5e7eb;
+  margin-top: 0.5rem;
+  line-height: 1.6;
 }

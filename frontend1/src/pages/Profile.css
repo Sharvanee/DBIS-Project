@@ -1,40 +1,66 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #1e1e1e; /* Dark background */
+  color: #f5f5f5; /* Light text */
+}
+
 .profile-container {
   display: flex;
-  flex-direction: column; /* Stack items vertically */
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  margin-top: 50px;
+  margin: 50px auto;
+  width: 90%; /* 90% width */
+  max-width: 1200px;
+  padding: 0 20px;
 }
 
 .profile-card {
   display: flex;
-  border: 1px solid #ccc;
-  padding: 24px;
-  border-radius: 12px;
-  width: 600px; /* Keeps profile card width as is */
-  background-color: #fafafa;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
-  margin-bottom: 30px; /* Adds spacing below the profile card */
+  flex-wrap: wrap;
+  border: none;
+  background-color: #2b2b2b; /* Dark background for card */
+  padding: 32px;
+  border-radius: 16px;
+  width: 100%; /* Ensures it spans 100% of the profile-container width */
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); /* Light shadow */
+  transition: background-color 0.3s, box-shadow 0.3s;
+  margin-bottom: 40px;
 }
 
 .profile-left {
-  margin-right: 24px;
+  flex: 0 0 150px;
+  margin-right: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .profile-pic {
   width: 120px;
   height: 120px;
   object-fit: cover;
-  border-radius: 50%;
-  border: 2px solid #ddd;
+  border-radius: 8px; /* Square shape with rounded corners */
+  border: 3px solid #555; /* Darker border */
+}
+
+.profile-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .profile-right h2 {
   margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 2rem;
+  color: #f5f5f5; /* Light color for title */
 }
 
 .profile-right p {
   margin: 6px 0;
+  color: #ccc; /* Light text for description */
 }
 
 .profile-buttons {
@@ -42,14 +68,15 @@
 }
 
 .btn {
-  padding: 8px 16px;
-  margin-right: 10px;
+  padding: 10px 18px;
+  margin-right: 12px;
   border: none;
   background-color: #007bff;
   color: white;
   text-decoration: none;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: background-color 0.25s ease;
 }
 
 .btn:hover {
@@ -64,74 +91,104 @@
   background-color: #5a6268;
 }
 
-.initials-avatar {
-  background-color: #999;
-  border-radius: 50%;
-  width: 100px;
-  height: 100px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 32px;
-  color: white;
-  font-weight: bold;
-}
-
-/* Heatmap styling */
 .react-calendar-heatmap {
-  width: 100%; /* Ensures heatmap takes full available width */
-  max-width: 1100px; /* Set a wider max-width for the heatmap */
-  margin-top: 20px; /* Add margin between profile card and heatmap */
-  padding: 10px;
-  border-radius: 8px;
-  background: #fafafa;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+  width: 100%; /* Ensure heatmap takes full available width */
+  max-width: 90%; /* Set the max-width to 90% of the container */
+  padding: 20px;
+  border-radius: 12px;
+  background: #2b2b2b; /* Dark background for heatmap */
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.3); /* Light shadow */
+  margin-top: 40px; /* Adds margin between profile card and heatmap */
 }
 
 .react-calendar-heatmap .react-calendar-heatmap-week {
-  margin-right: 4px; /* Space between week columns */
+  margin-right: 4px;
 }
 
 .react-calendar-heatmap text {
   font-size: 10px;
-  fill: #555;
+  fill: #ccc; /* Light text for heatmap */
 }
 
 .react-calendar-heatmap .month-labels text {
   font-size: 12px;
   font-weight: bold;
+  fill: #eee; /* Light color for month labels */
 }
 
-
-/* Color scales for the heatmap */
+/* Color scales */
 .color-empty {
-  fill: #eeeeee;
+  fill: #444;
 }
 
 .color-scale-1 {
-  fill: #c6e48b;
+  fill: #88d498;
 }
 
 .color-scale-2 {
-  fill: #7bc96f;
+  fill: #49cc90;
 }
 
 .color-scale-3 {
-  fill: #239a3b;
+  fill: #2dba89;
 }
 
 .color-scale-4 {
+  fill: #27ae60;
+}
+
+body.dark .color-empty {
+  fill: #555;
+}
+
+body.dark .color-scale-1 {
+  fill: #7bc96f;
+}
+
+body.dark .color-scale-2 {
+  fill: #239a3b;
+}
+
+body.dark .color-scale-3 {
   fill: #196127;
 }
 
-/* Visually separate months with extra margin on the first week of each month */
-.react-calendar-heatmap .react-calendar-heatmap-week:nth-child(5n) {
-  margin-right: 12px; /* Wider space after every ~4 weeks to simulate a month block */
+body.dark .color-scale-4 {
+  fill: #0a3c1c;
 }
 
-/* Optional: Style the month labels more prominently */
-.react-calendar-heatmap .month-labels text {
-  font-size: 12px;
-  fill: #333;
-  font-weight: bold;
+.react-calendar-heatmap .react-calendar-heatmap-week:nth-child(5n) {
+  margin-right: 12px;
+}
+
+@media (max-width: 768px) {
+  .profile-card {
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+
+  .profile-left {
+    margin-right: 0;
+    margin-bottom: 20px;
+  }
+
+  .profile-right {
+    align-items: center;
+    text-align: center;
+  }
+
+  .btn {
+    width: 100%;
+    margin: 8px 0;
+  }
+
+  .profile-buttons {
+    width: 100%;
+  }
+
+  .react-calendar-heatmap {
+    width: 100%; /* Full width on smaller screens */
+    max-width: 100%; /* No max-width on smaller screens */
+  }
 }

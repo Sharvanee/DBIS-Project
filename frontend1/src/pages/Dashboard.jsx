@@ -9,8 +9,12 @@ const Dashboard = () => {
   const [username, setUsername] = useState("User");
   const [contests, setContests] = useState([]);
   const [blogs, setBlogs] = useState([]);
-
-  const categories = ["data structures", "greedy", "graphs", "sorting"];
+  const [categories, setCategories] = useState([
+    "data structures",
+    "greedy",
+    "graphs",
+    "sorting"
+  ]);
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -72,99 +76,85 @@ const Dashboard = () => {
   }, [navigate]);
 
   const now = new Date();
-
-  // Sorting contests by active, upcoming, and past priorities
   const sortedContests = contests
     .map((c) => {
       const startTime = new Date(c.start_time);
       const endTime = new Date(startTime.getTime() + c.duration * 60000);
       let status = "past";
-      if (now < startTime) {
-        status = "upcoming";
-      } else if (now >= startTime && now <= endTime) {
-        status = "active";
-      }
-
+      if (now < startTime) status = "upcoming";
+      else if (now >= startTime && now <= endTime) status = "active";
       return { ...c, status, startTime, endTime };
     })
     .sort((a, b) => {
-      // Prioritize active contests, then upcoming, then past
       if (a.status === "active" && b.status !== "active") return -1;
       if (a.status !== "active" && b.status === "active") return 1;
       if (a.status === "upcoming" && b.status !== "upcoming") return -1;
       if (a.status !== "upcoming" && b.status === "upcoming") return 1;
       return a.startTime - b.startTime;
     })
-    .slice(0, 4); // Limit to the top 4 contests
+    .slice(0, 6);
 
-  // Sorting blogs by creation date (most recent first)
   const sortedBlogs = blogs
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 4); // Limit to the top 4 latest blogs
+    .slice(0, 4);
 
   return (
     <>
       <Navbar />
       <div className="dashboard-container">
-        <div className="dashboard-content">
-          <h1 className="dashboard-title">Hi, {username} 👋</h1>
-          <p className="dashboard-subtitle">Welcome to CodeQuest!</p>
-          <p className="dashboard-description">
-            Jump into contests, solve problems, and climb the leaderboard 🏆
-          </p>
+        <div className="hero">
+          <h1>Welcome back, <span>{username}</span>!</h1>
+          <p>Sharpen your skills, compete, and grow every day with CodeQuest.</p>
+        </div>
 
-          <div className="dashboard-section">
-            <h2>Problem Categories</h2>
-            <div className="categories-list">
+        <section className="section">
+          <h2>Problem Categories</h2>
+          <div className="grid categories">
             {categories.map((tag) => (
-  <div key={tag} className="category-card">
-    <Link to={`/problem-set?tag=${encodeURIComponent(tag)}`} className="category-link">
-      {tag}
-    </Link>
-  </div>
-))}
-
-            </div>
+              <Link
+                key={tag}
+                to={`/problem-set?tag=${encodeURIComponent(tag)}`}
+                className="card category"
+              >
+                <span>{tag}</span>
+              </Link>
+            ))}
           </div>
+        </section>
 
-          <div className="dashboard-section">
-            <h2>Contests</h2>
+        <section className="section">
+          <h2>Contests</h2>
+          <div className="grid contests">
             {sortedContests.length === 0 ? (
               <p>No contests available.</p>
             ) : (
-              <div className="contests-list">
-                {sortedContests.map((c) => (
-                  <div key={c.contest_id} className={`contest-card ${c.status}`}>
-                    <h3>
-                      <Link to={`/contest/${c.contest_id}`}>{c.contest_name}</Link>
-                    </h3>
-                    <p>{c.startTime.toLocaleString()}</p>
-                    <span>{c.status.charAt(0).toUpperCase() + c.status.slice(1)}</span>
-                  </div>
-                ))}
-              </div>
+              sortedContests.map((c) => (
+                <Link key={c.contest_id} to={`/contest/${c.contest_id}`} className={`card contest ${c.status}`}>
+                  <h3>{c.contest_name}</h3>
+                  <p>{c.startTime.toLocaleString()}</p>
+                  <span className="badge">{c.status}</span>
+                </Link>
+              ))
             )}
           </div>
+        </section>
 
-          <div className="dashboard-section">
-            <h2>Blogs</h2>
+        <section className="section">
+          <h2>Latest Blogs</h2>
+          <div className="grid blogs">
             {sortedBlogs.length === 0 ? (
               <p>No blogs published yet.</p>
             ) : (
-              <div className="blogs-list">
-                {sortedBlogs.map((b) => (
-                  <div key={b.id} className="blog-card">
-                    <h3>
-                      <Link to={`/blogs/${b.id}`}>{b.title}</Link>
-                    </h3>
-                    <p className="blog-author">by {b.author}</p>
-                    <p>{b.content.slice(0, 150)}...</p> {/* Show the first part of the blog content */}
-                  </div>
-                ))}
-              </div>
+              sortedBlogs.map((b) => (
+                <Link key={b.id} to={`/blogs/${b.id}`} className="card blog">
+                  <h3>{b.title}</h3>
+                  <p className="meta">By {b.author}</p>
+                  <p>{b.content.slice(0, 120)}...</p>
+                </Link>
+              ))
             )}
           </div>
-        </div>
+        </section>
       </div>
     </>
   );

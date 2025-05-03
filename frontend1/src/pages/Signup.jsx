@@ -174,14 +174,14 @@ const Signup = () => {
           justify-content: center;
           align-items: center;
           height: 100vh;
-          background-color: #f8fafc;
+          background-color: #121212; /* Dark background */
         }
 
         .signup-box {
-          background: white;
+          background: #1f1f3d; /* Dark background for signup box */
           padding: 2.5rem 3rem;
           border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
           width: 100%;
           max-width: 400px;
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -190,7 +190,7 @@ const Signup = () => {
         h2 {
           text-align: center;
           margin-bottom: 1.5rem;
-          color: #1e293b;
+          color: #f5f5f5; /* Light text */
         }
 
         .signup-form {
@@ -201,20 +201,22 @@ const Signup = () => {
         .signup-form input {
           padding: 0.75rem 1rem;
           margin-bottom: 1rem;
-          border: 1px solid #cbd5e1;
+          border: 1px solid #444; /* Dark border */
           border-radius: 8px;
           font-size: 1rem;
+          background-color: #333; /* Dark background for inputs */
+          color: #f5f5f5; /* Light text */
           transition: border-color 0.2s;
         }
 
         .signup-form input:focus {
-          border-color: #6366f1;
+          border-color: #6366f1; /* Blue focus border */
           outline: none;
         }
 
         button {
           padding: 0.75rem 1rem;
-          background-color: #6366f1;
+          background-color: #6366f1; /* Blue button */
           color: white;
           font-weight: 600;
           border: none;
@@ -233,14 +235,14 @@ const Signup = () => {
         }
 
         .error-message {
-          color: #ef4444;
+          color: #ef4444; /* Red error text */
           margin-top: -0.75rem;
           margin-bottom: 0.75rem;
           font-size: 0.875rem;
         }
 
         .success-message {
-          color: #10b981;
+          color: #10b981; /* Green success text */
           margin-top: -0.75rem;
           margin-bottom: 0.75rem;
           font-size: 0.875rem;
@@ -253,7 +255,7 @@ const Signup = () => {
         }
 
         .login-link a {
-          color: #6366f1;
+          color: #6366f1; /* Blue link */
           text-decoration: none;
           font-weight: 500;
         }

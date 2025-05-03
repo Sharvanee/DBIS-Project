@@ -1,251 +1,255 @@
+/* Dark Mode Theme */
 body {
-    background-color: #f5f6fa;
-    margin: 0;
-    font-family: Arial, sans-serif;
-  }
-  
-  .blogs-container {
-    max-width: 800px;
-    margin: 40px auto;
-    padding: 20px;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  }
-  
-  .blogs-container h1 {
-    text-align: center;
-    color: #2c3e50;
-    margin-bottom: 30px;
-    font-size: 2em;
-  }
-  
-  .blog-preview {
-    padding: 16px 20px;
-    margin-bottom: 20px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: #fafafa;
-    transition: box-shadow 0.2s ease;
-  }
-  
-  .blog-preview:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  }
-  
-  .blog-preview h2 {
-    margin: 0;
-    font-size: 1.4em;
-    color: #007bff;
-  }
-  
-  .blog-preview h2 a {
-    text-decoration: none;
-    color: inherit;
-  }
-  
-  .blog-preview h2 a:hover {
-    text-decoration: underline;
-  }
-  
-  .blog-preview p {
-    margin: 6px 0;
-    color: #555;
-  }
-  
-  .blog-detail {
-    max-width: 800px;
-    margin: 40px auto;
-    padding: 20px;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  }
-  
-  .blog-detail h1 {
-    font-size: 2em;
-    color: #2c3e50;
-    margin-bottom: 10px;
-  }
-  
-  .blog-detail em {
-    display: block;
-    margin-bottom: 20px;
-    color: #777;
-    font-style: normal;
-    font-size: 0.95em;
-  }
-  
-  .blog-content {
-    font-size: 1.05em;
-    line-height: 1.6;
-    color: #333;
-  }
-  .add-blog-button {
-    margin-top: 2rem;
-    text-align: center;
-  }
-  
-  .add-blog-button .btn {
-    display: inline-block;
-    padding: 0.6rem 1.2rem;
-    background-color: #007bff;
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
-  }
-  
-  .add-blog-button .btn:hover {
-    background-color: #0056b3;
-  }
+  background-color: #121212; /* Dark background */
+  margin: 0;
+  font-family: Arial, sans-serif;
+  color: #f5f5f5; /* Light text */
+}
 
-  
-  .floating-add-blog-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-  }
-  
-  .floating-add-blog-button .btn {
-    padding: 0.75rem 1.2rem;
-    background-color: #28a745;
-    color: white;
-    border-radius: 50px;
-    font-weight: bold;
-    text-decoration: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    transition: background-color 0.3s ease;
-  }
-  
-  .floating-add-blog-button .btn:hover {
-    background-color: #218838;
-  }
+.blogs-container {
+  width: 90%; /* Set container width to 90% */
+  max-width: none; /* Remove the previous max-width */
+  margin: 40px auto;
+  padding: 20px;
+  background: #1f1f3d; /* Dark background for container */
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); /* Lighter shadow */
+}
 
-  
-  /* Reactions section */
+.blogs-container h1 {
+  text-align: center;
+  color: #f5f5f5; /* Light text color */
+  margin-bottom: 30px;
+  font-size: 2em;
+}
+
+.blog-preview {
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  border: 1px solid #444; /* Darker border */
+  border-radius: 8px;
+  background-color: #2d2d2d; /* Dark background for preview */
+  transition: box-shadow 0.2s ease;
+}
+
+.blog-preview:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.blog-preview h2 {
+  margin: 0;
+  font-size: 1.4em;
+  color: #4CAF50; /* Green color for blog title */
+}
+
+.blog-preview h2 a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.blog-preview h2 a:hover {
+  text-decoration: underline;
+}
+
+.blog-preview p {
+  margin: 6px 0;
+  color: #ccc; /* Lighter text for blog preview */
+}
+
+.blog-detail {
+  width: 90%; /* Ensure the detail page also spans 90% */
+  max-width: none; /* Remove the max-width restriction */
+  margin: 40px auto;
+  padding: 20px;
+  background: #1f1f1f; /* Dark background for details */
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.blog-detail h1 {
+  font-size: 2em;
+  color: #f5f5f5; /* Light text for blog title */
+  margin-bottom: 10px;
+}
+
+.blog-detail em {
+  display: block;
+  margin-bottom: 20px;
+  color: #aaa; /* Lighter color for metadata */
+  font-style: normal;
+  font-size: 0.95em;
+}
+
+.blog-content {
+  font-size: 1.05em;
+  line-height: 1.6;
+  color: #ddd; /* Light text for content */
+}
+
+.add-blog-button {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.add-blog-button .btn {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  background-color: #28a745; /* Green button for adding blog */
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.add-blog-button .btn:hover {
+  background-color: #218838; /* Darker green on hover */
+}
+
+.floating-add-blog-button {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  z-index: 5000;
+}
+
+.floating-add-blog-button .btn {
+  padding: 1rem 1.5rem;
+  background-color: #28a745;
+  color: white;
+  border-radius: 50px;
+  font-weight: bold;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
+}
+
+.floating-add-blog-button .btn:hover {
+  background-color: #218838;
+}
+
+/* Reactions section */
 .reactions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin: 1rem 0;
-  }
-  
-  .reaction-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #555;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    transition: color 0.2s;
-  }
-  
-  .reaction-button:hover {
-    color: #007bff;
-  }
-  
-  .reaction-count {
-    font-weight: bold;
-  }
-  
-  /* Comments section */
-  .comments-section {
-    margin-top: 2rem;
-    border-top: 1px solid #ddd;
-    padding-top: 1rem;
-  }
-  
-  .comment {
-    margin-bottom: 1.5rem;
-    padding: 0.75rem 1rem;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    background-color: #fafafa;
-  }
-  
-  .comment .user-info {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.5rem;
-  }
-  
-  .comment .user-info img {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    margin-right: 0.6rem;
-    object-fit: cover;
-  }
-  
-  .comment .username {
-    font-weight: 600;
-    color: #333;
-  }
-  
-  .comment .content {
-    color: #444;
-    font-size: 0.95rem;
-  }
-  
-  /* Add Comment Form */
-  .add-comment-form {
-    margin-top: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .add-comment-form textarea {
-    resize: vertical;
-    min-height: 80px;
-    padding: 0.5rem;
-    font-size: 1rem;
-  }
-  
-  .add-comment-form button {
-    align-self: flex-start;
-    padding: 0.5rem 1rem;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.95rem;
-    transition: background-color 0.2s;
-  }
-  
-  .add-comment-form button:hover {
-    background-color: #0056b3;
-  }
-  
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
 
-  .reactions button {
-    padding: 8px 16px;
-    margin-right: 10px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.2s ease;
-  }
-  
-  .like-button.active {
-    background-color: #28a745;
-    color: white;
-  }
-  
-  .dislike-button.active {
-    background-color: #dc3545;
-    color: white;
-  }
-  
-  .like-button:not(.active):hover,
-  .dislike-button:not(.active):hover {
-    background-color: #f0f0f0;
-  }
-  
+.reaction-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ccc; /* Lighter color for reaction buttons */
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: color 0.2s;
+}
+
+.reaction-button:hover {
+  color: #4CAF50; /* Green color on hover */
+}
+
+.reaction-count {
+  font-weight: bold;
+}
+
+/* Comments section */
+.comments-section {
+  margin-top: 2rem;
+  border-top: 1px solid #444; /* Darker border for comments section */
+  padding-top: 1rem;
+}
+
+.comment {
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #555; /* Darker border for comments */
+  border-radius: 8px;
+  background-color: #2d2d2d; /* Dark background for comments */
+}
+
+.comment .user-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.comment .user-info img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 0.6rem;
+  object-fit: cover;
+}
+
+.comment .username {
+  font-weight: 600;
+  color: #f5f5f5; /* Light color for username */
+}
+
+.comment .content {
+  color: #ccc; /* Lighter color for comment content */
+  font-size: 0.95rem;
+}
+
+/* Add Comment Form */
+.add-comment-form {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.add-comment-form textarea {
+  resize: vertical;
+  min-height: 80px;
+  padding: 0.5rem;
+  font-size: 1rem;
+  background-color: #333; /* Dark background for textarea */
+  color: #f5f5f5; /* Light text in textarea */
+  border: 1px solid #444; /* Dark border for textarea */
+}
+
+.add-comment-form button {
+  align-self: flex-start;
+  padding: 0.5rem 1rem;
+  background-color: #4CAF50; /* Green button for submitting comment */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color 0.2s;
+}
+
+.add-comment-form button:hover {
+  background-color: #218838; /* Darker green on hover */
+}
+
+.reactions button {
+  padding: 8px 16px;
+  margin-right: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.like-button.active {
+  background-color: #28a745;
+  color: white;
+}
+
+.dislike-button.active {
+  background-color: #dc3545;
+  color: white;
+}
+
+.like-button:not(.active):hover,
+.dislike-button:not(.active):hover {
+  background-color: #444; /* Darker background on hover */
+}

@@ -264,7 +264,7 @@ const Problem = () => {
                 {problem.submissions?.length > 0 ? (
                   problem.submissions.map((s) => (
                     <tr key={s.id}>
-                      <td><a href={`/submission/${s.id}`}>{s.id}</a></td>
+                      <td><a href={`/submission/${s.id}`} style={{color:'white'}}>{s.id}</a></td>
                       <td>{s.verdict}</td>
                       <td>{s.language}</td>
                     </tr>

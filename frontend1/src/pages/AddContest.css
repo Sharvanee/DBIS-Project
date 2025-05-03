@@ -1,20 +1,22 @@
+/* Dark Mode Theme */
 .pageContainer {
   min-height: 100vh;
-  background-color: #f1f5f9;
+  background-color: #121212; /* Dark background */
   padding: 2rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #f5f5f5; /* Light text */
 }
 
 .container {
-  width: 100%;
-  max-width: 900px;
-  background-color: #ffffff;
+  width: 90%; /* Set container width to 90% */
+  max-width: none; /* Remove the previous max-width */
+  background-color: #1f1f3d; /* Dark background for container */
   padding: 2.5rem;
   border-radius: 1rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); /* Lighter shadow */
 }
 
 .heading {
@@ -22,12 +24,16 @@
   font-weight: 700;
   margin-bottom: 2rem;
   text-align: center;
-  color: #1f2937;
+  color: #ffffff; /* White text for heading */
 }
 
 .logoutBtn {
   margin-bottom: 2rem;
   align-self: flex-end;
+  color: #f5f5f5; /* Light color for logout button */
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 
 .form {
@@ -50,9 +56,11 @@
 .input, .dateInput, .textarea {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #3e4c59; /* Darker border */
   border-radius: 0.625rem;
   font-size: 1rem;
+  background-color: #2d2d2d; /* Dark input background */
+  color: #f5f5f5; /* Light text inside input fields */
 }
 
 .textarea {
@@ -65,15 +73,15 @@
   font-weight: 600;
   margin-top: 2rem;
   margin-bottom: 1rem;
-  color: #334155;
-  border-bottom: 2px solid #e5e7eb;
+  color: #e5e7eb; /* Light color for subheading */
+  border-bottom: 2px solid #3e4c59; /* Dark border */
   padding-bottom: 0.5rem;
 }
 
 .problemBox {
-  background-color: #f8fafc;
+  background-color: #333333; /* Dark background for problem box */
   padding: 1.5rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #444; /* Darker border */
   border-radius: 1rem;
   margin-top: 1rem;
   display: flex;
@@ -90,11 +98,11 @@
 .problemHeader h3 {
   font-size: 1.2rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #f5f5f5; /* Light color for problem header */
 }
 
 .submitBtn {
-  background-color: #2563eb;
+  background-color: #4CAF50; /* Green for submit button */
   color: white;
   font-weight: 700;
   font-size: 1rem;
@@ -108,5 +116,13 @@
 }
 
 .submitBtn:hover {
-  background-color: #1d4ed8;
+  background-color: #45a049; /* Slightly darker green on hover */
+}
+
+.submitBtn:focus {
+  outline: none;
+}
+
+.submitBtn:active {
+  background-color: #388e3c; /* Darker green when clicked */
 }

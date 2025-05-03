@@ -1,99 +1,152 @@
-/* Add this to your main CSS (or Contest.css if it's imported globally) */
+/* Global base styles */
 body {
-    background-color: #f5f6fa; /* light gray-blue background */
-    margin: 0;
-    font-family: Arial, sans-serif;
-  }
-  
-.contest-container {
-    max-width: 800px;
-    margin: 40px auto;
-    padding: 20px;
-    font-family: Arial, sans-serif;
-  }
-  
-  .contest-title {
-    font-size: 2em;
-    text-align: center;
-    margin-bottom: 10px;
-    color: #2c3e50;
-  }
-  
-  .contest-detail {
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 1.1em;
-    color: #555;
-  }
-  
-  .section-heading {
-    font-size: 1.5em;
-    margin-bottom: 15px;
-    color: #34495e;
-    border-bottom: 2px solid #ddd;
-    padding-bottom: 5px;
-  }
-  
-  .problem-list {
-    list-style-type: none;
-    padding-left: 0;
-  }
-  
-  .problem-item {
-    padding: 12px 15px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .problem-title a {
-    text-decoration: none;
-    color: #007bff;
-    font-weight: 500;
-  }
-  
-  .problem-title a:hover {
-    text-decoration: underline;
-  }
-  
-  .problem-meta {
-    color: #666;
-    font-size: 0.95em;
-  }
-  
-  .loading,
-  .error,
-  .no-problems {
-    text-align: center;
-    font-size: 1.2em;
-    margin-top: 40px;
-    color: #888;
-  }
+  background-color: #f5f6fa;
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
 
-  .leaderboard-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-  }
-  
-  .leaderboard-table th,
-  .leaderboard-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: center;
-  }
-  
-  .leaderboard-table th {
-    background-color: #f2f2f2;
-  }
-  
-  
-  .countdown {
-    font-weight: bold;
-    color: #ff4d4f;
-    font-size: 1.1em;
-  }
-  
+body.dark {
+  background-color: #1e1e1e;
+  color: #f5f5f5;
+}
+
+/* Main container */
+.contest-container {
+  max-width: 90%;
+  margin: 40px auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: transparent;
+}
+
+/* Contest header */
+.contest-title {
+  font-size: 2em;
+  text-align: center;
+  margin-bottom: 10px;
+  color: #2c3e50;
+}
+
+body.dark .contest-title {
+  color: #f5f5f5;
+}
+
+.contest-detail {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 1.1em;
+  color: #ffd056;
+}
+
+body.dark .contest-detail {
+  color: #ccc;
+}
+
+.countdown {
+  font-weight: bold;
+  color: #ff4d4f;
+  font-size: 1.1em;
+}
+
+body.dark .countdown {
+  color: #ff6f6f;
+}
+
+/* Section headers */
+.section-heading {
+  font-size: 1.5em;
+  margin-bottom: 15px;
+  color: #ffd056;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 5px;
+}
+
+body.dark .section-heading {
+  color: #f0f0f0;
+  border-bottom: 2px solid #444;
+}
+
+/* Problem list */
+.problem-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.problem-item {
+  padding: 12px 15px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fff;
+}
+
+body.dark .problem-item {
+  background-color: #2a2a2a;
+  border-color: #444;
+}
+
+.problem-title a {
+  text-decoration: none;
+  color: #007bff;
+  font-weight: 500;
+}
+
+.problem-title a:hover {
+  text-decoration: underline;
+}
+
+.problem-meta {
+  color: #666;
+  font-size: 0.95em;
+}
+
+body.dark .problem-meta {
+  color: #aaa;
+}
+
+/* Loading & error messages */
+.loading,
+.error,
+.no-problems {
+  text-align: center;
+  font-size: 1.2em;
+  margin-top: 40px;
+  color: #888;
+}
+
+body.dark .loading,
+body.dark .error,
+body.dark .no-problems {
+  color: #aaa;
+}
+
+/* Leaderboard table */
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.leaderboard-table th {
+  background-color: #f2f2f2;
+  color: #222;
+}
+
+body.dark .leaderboard-table th {
+  background-color: #2b2b2b;
+  color: #eee;
+}
+
+body.dark .leaderboard-table td {
+  border-color: #444;
+}

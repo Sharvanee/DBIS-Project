@@ -167,7 +167,7 @@ const Contest = () => {
                 return (
                   <tr key={problem.id}>
                     <td>
-                      <a href={`/problem/${problem.id}`}>{problem.title}</a>
+                      <a href={`/problem/${problem.id}`} style={{color:'#ffd056'}}>{problem.title}</a>
                     </td>
                     <td>{problem.difficulty}</td>
                     <td>{stats.total_submissions}</td>
