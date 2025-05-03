@@ -4,12 +4,11 @@ import { apiUrl } from "../config/config";
 import Navbar from "../components/Navbar";
 
 const SingleSubmission = () => {
-  const { id } = useParams(); // Get submission ID from URL
+  const { id } = useParams(); 
   const navigate = useNavigate();
   const [submission, setSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if logged in
   useEffect(() => {
     const checkLogin = async () => {
       try {
@@ -28,7 +27,6 @@ const SingleSubmission = () => {
     checkLogin();
   }, [navigate]);
 
-  // Fetch submission by ID
   useEffect(() => {
     const fetchSubmission = async () => {
       try {

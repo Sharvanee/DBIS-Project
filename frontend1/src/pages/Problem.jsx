@@ -21,7 +21,6 @@ const Problem = () => {
   const [isLocked, setIsLocked] = useState(false);
   const [isProblemLocked, setIsProblemLocked] = useState(false);
 
-  // Theme effect
   useEffect(() => {
     const theme = localStorage.getItem("theme") || "light";
     if (theme === "dark") document.body.classList.add("dark");
@@ -77,11 +76,9 @@ const Problem = () => {
           const now = new Date();
         
           if (now < start) {
-            // Contest hasn't started yet — lock the whole problem
             setIsProblemLocked(true);
             setIsLocked(true);
           } else {
-            // Contest has started; optionally lock model solution if contest is still ongoing
             setIsLocked(now < end);
           }
         }
@@ -109,7 +106,6 @@ const Problem = () => {
       const seconds = String(diff % 60).padStart(2, "0");
       setCountdown(`${hours}:${minutes}:${seconds}`);
 
-      // Lock model solution if contest is over
       if (diff === 0 && isLocked) {
         setIsLocked(false);
       }
@@ -133,14 +129,12 @@ const Problem = () => {
       const result = await res.json();
       if (res.ok) {
         alert("Submission successful!");
-        // setCode("");
         setFile(null);
-        // Fetch the latest submission data (refresh the problem state)
         const updatedProblemRes = await fetch(`${apiUrl}/problem/${id}`, {
           credentials: "include",
         });
         const updatedProblemData = await updatedProblemRes.json();
-        setProblem(updatedProblemData);  // This will re-render the component with the new submissions
+        setProblem(updatedProblemData);
 
       } else {
         alert("Submission failed: " + result.error);

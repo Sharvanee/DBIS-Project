@@ -10,7 +10,7 @@ const BlogDetail = () => {
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
     const [error, setError] = useState("");
-    const [userReaction, setUserReaction] = useState(null); // 'like', 'dislike', or null
+    const [userReaction, setUserReaction] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -79,7 +79,6 @@ const BlogDetail = () => {
 
     const handleReaction = async (is_like) => {
         try {
-            // If user is clicking on the same reaction, remove it
             if (userReaction === (is_like ? "like" : "dislike")) {
                 is_like = null;
             }
@@ -91,7 +90,7 @@ const BlogDetail = () => {
                 body: JSON.stringify({ is_like }),
             });
 
-            setUserReaction(is_like ? (is_like ? "like" : "dislike") : null); // Update the reaction state
+            setUserReaction(is_like ? (is_like ? "like" : "dislike") : null);
 
             const res = await fetch(`${apiUrl}/blogs/${id}`, { credentials: "include" });
             if (res.ok) {

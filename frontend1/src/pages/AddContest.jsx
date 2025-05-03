@@ -86,7 +86,6 @@ const AddContest = () => {
     setError("");
     setSuccess("");
 
-    // ⛏️ Parse testcases before sending
     const parsedProblems = formData.problems.map((p) => ({
       ...p,
       testcases: (() => {
@@ -96,7 +95,7 @@ const AddContest = () => {
           return {};
         }
       })(),
-      model_solution: p.model_solution || "",  // <- ensure it's retained
+      model_solution: p.model_solution || "",
     }));
     
 

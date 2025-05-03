@@ -57,7 +57,6 @@ useEffect(() => {
     fetchProblems();
   }, []);
 
-  // Filtering
   let filteredProblems = problems.filter((p) => {
     const matchesText =
       p.title.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -70,7 +69,6 @@ useEffect(() => {
     return matchesText && matchesTag;
   });
 
-  // Sorting
   let sortedProblems = [...filteredProblems];
   if (sortKey) {
     sortedProblems.sort((a, b) => {

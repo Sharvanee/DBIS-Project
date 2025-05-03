@@ -13,6 +13,8 @@ const Dashboard = () => {
     "data structures",
     "greedy",
     "graphs",
+    "dp",
+    "combinatorics",
     "sorting"
   ]);
 
@@ -96,7 +98,7 @@ const Dashboard = () => {
 
   const sortedBlogs = blogs
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 4);
+    .slice(0, 3);
 
   return (
     <>

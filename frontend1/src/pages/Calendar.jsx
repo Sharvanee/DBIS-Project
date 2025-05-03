@@ -5,7 +5,6 @@ import { apiUrl } from "../config/config";
 const PageName = () => {
   const navigate = useNavigate();
 
-  // Optional: Check login status (if page requires authentication)
   useEffect(() => {
     const checkLogin = async () => {
       try {
@@ -25,11 +24,9 @@ const PageName = () => {
     checkLogin();
   }, [navigate]);
 
-  // Example: Local state for this page
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Optional: Fetch some data on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -57,7 +54,7 @@ const PageName = () => {
         <p>Loading...</p>
       ) : (
         <div>
-          {/* Render your actual page content here */}
+          {}
           <p>Data: {JSON.stringify(data)}</p>
         </div>
       )}

@@ -61,7 +61,8 @@ app.use(
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
+      // maxAge: 30 * 24 * 60 * 60 * 1000,
+      maxAge: 60* 1000,
     },
   })
 );
@@ -170,34 +171,6 @@ app.post("/blogs/:id/comments", isAuthenticated, async (req, res) => {
   }
 });
 
-// Like or Dislike
-// app.post("/blogs/:id/react", isAuthenticated, async (req, res) => {
-//   const { id } = req.params;
-//   const { is_like } = req.body;
-//   const userId = req.session.user.id;
-
-//   if (typeof is_like !== "boolean") {
-//     return res.status(400).json({ error: "is_like must be true or false" });
-//   }
-
-//   try {
-//     await pool.query(
-//       `
-//       INSERT INTO blog_reactions (blog_id, user_id, is_like)
-//       VALUES ($1, $2, $3)
-//       ON CONFLICT (blog_id, user_id)
-//       DO UPDATE SET is_like = EXCLUDED.is_like
-//     `,
-//       [id, userId, is_like]
-//     );
-
-//     res.sendStatus(200);
-//   } catch (err) {
-//     console.error("Error recording reaction:", err);
-//     res.status(500).json({ error: "Failed to react to blog" });
-//   }
-// });
-
 
 app.post("/blogs/:id/react", isAuthenticated, async (req, res) => {
   const { id } = req.params;
@@ -277,26 +250,6 @@ app.get("/blogs/:id", isAuthenticated, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch blog" });
   }
 });
-
-
-// app.get("/blogs/:id/user-reaction", isAuthenticated, async (req, res) => {
-//   const { id } = req.params;
-//   const userId = req.session.user.id;
-
-//   try {
-//     const result = await pool.query(
-//       `SELECT is_like FROM blog_reactions WHERE blog_id = $1 AND user_id = $2`,
-//       [id, userId]
-//     );
-
-//     if (result.rows.length === 0) return res.json({ is_like: null });
-
-//     res.json({ is_like: result.rows[0].is_like });
-//   } catch (err) {
-//     console.error("Error fetching user reaction:", err);
-//     res.status(500).json({ error: "Failed to fetch user reaction" });
-//   }
-// });
 
 
 app.get("/blogs/:id/user-reaction", isAuthenticated, async (req, res) => {
@@ -395,7 +348,8 @@ app.post("/login", async (req, res) => {
         .json({ success: false, message: "Invalid handle or password" });
     }
 
-    if (rememberMe) req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+    // if (rememberMe) req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+    if (rememberMe) req.session.cookie.maxAge = 60 * 1000;
     else req.session.cookie.expires = false;
 
     req.session.user = {
@@ -750,7 +704,6 @@ app.get("/contest/:id/stats", isAuthenticated, async (req, res) => {
   const contestId = req.params.id;
 
   try {
-    // ✅ Problem-level stats
     const problemStatsQuery = await pool.query(
       `
       SELECT 
@@ -773,7 +726,6 @@ app.get("/contest/:id/stats", isAuthenticated, async (req, res) => {
       };
     });
 
-    // ✅ User-level leaderboard including all registered users
     const leaderboardQuery = await pool.query(
       `
 SELECT

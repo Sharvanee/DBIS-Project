@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiUrl } from "../config/config";
-import "./Profile.css"; // Assuming you have a CSS file for styling
+import "./Profile.css"; 
 import Navbar from "./Navbar";
 import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
@@ -43,14 +43,13 @@ const Profile = () => {
 
         if (!solvedRes.ok) {
           console.error("Error fetching solved data:", solvedRes.statusText);
-          setSolvedMap([]); // Safe fallback to empty array
+          setSolvedMap([]); 
           return;
         }
 
         const solvedData = await solvedRes.json();
-        console.log("🔥 solvedData", solvedData);
+        console.log("solvedData", solvedData);
 
-        // Ensure it's always an array
         setSolvedMap(Array.isArray(solvedData) ? solvedData : []);
 
       } catch (error) {
@@ -141,7 +140,7 @@ const Profile = () => {
           </div>
         </div>
 
-        <h3 style={{ marginTop: "20px" }}>🗓️ Activity Heatmap</h3>
+        <h3 style={{ marginTop: "20px" }}>Activity Heatmap</h3>
 
         <CalendarHeatmap
           startDate={subDays(new Date(), 365)}

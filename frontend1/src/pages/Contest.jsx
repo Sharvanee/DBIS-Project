@@ -42,7 +42,7 @@ const Contest = () => {
         }
 
         await fetchStats();
-        await checkRegistration(); // ✅ check registration after login
+        await checkRegistration();
       } catch (err) {
         console.error("Error fetching contest:", err);
         navigate("/not-found");
@@ -91,8 +91,7 @@ const Contest = () => {
 
       if (diff <= 0) {
         setCountdown("Contest ended");
-      
-        // 🔽 NEW: Send leaderboard to backend
+
         if (userLeaderboard.length > 0 && contest && !contest.rated) {
           fetch(`${apiUrl}/contest/${contest._id}/rate`, {
             method: "POST",
@@ -108,10 +107,10 @@ const Contest = () => {
             })
             .catch((err) => console.error("Rating update error:", err));
         }
-      
+
         return;
       }
-      
+
 
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -142,10 +141,15 @@ const Contest = () => {
         <p className="contest-detail">
           <strong>End Time:</strong> {formattedEnd}
         </p>
-        <p className="contest-detail countdown">
-          <strong>Time Left:</strong> <span>{countdown}</span>
-        </p>
 
+        {contest.start_time &&
+          endTime &&
+          Date.now() >= new Date(contest.start_time).getTime() &&
+          Date.now() <= new Date(endTime).getTime() && (
+      <p className="contest-detail countdown">
+        <strong>Time Left:</strong> <span>{countdown}</span>
+      </p>
+        )}
         <h2 className="section-heading">Problems in this Contest</h2>
         {contest.problems && contest.problems.length > 0 ? (
           <table className="problem-table">
@@ -155,7 +159,7 @@ const Contest = () => {
                 <th>Difficulty</th>
                 <th>Total Submissions</th>
                 <th>Accepted Submissions</th>
-                <th>Submit</th> {/* ✅ new column */}
+                <th>Submit</th> {}
               </tr>
             </thead>
             <tbody>
@@ -167,7 +171,7 @@ const Contest = () => {
                 return (
                   <tr key={problem.id}>
                     <td>
-                      <a href={`/problem/${problem.id}`} style={{color:'#ffd056'}}>{problem.title}</a>
+                      <a href={`/problem/${problem.id}`} style={{ color: '#ffd056' }}>{problem.title}</a>
                     </td>
                     <td>{problem.difficulty}</td>
                     <td>{stats.total_submissions}</td>
