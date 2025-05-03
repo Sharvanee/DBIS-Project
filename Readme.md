@@ -1,4 +1,11 @@
-# Project Setup Instructions
+# Project: CodeQuest
+- This project is a full-stack platform integrating authentication, data management, and visualization using Node.js, PostgreSQL, and React. 
+- It is the implementation of a fully functional competitive programming platform called CodeQuest (inspired from
+already existing platforms such as Codeforces or LeetCode), which provides users with an interactive and user-friendly interface to learn in-demand programming languages, practice problem solving, participate in contests, track their performance, create custom
+contests, write blogs, and engage with the like-minded coding community.
+
+
+# Setup Instructions
 
 ##  1. Installation and Setup: 
 The following needs to be installed:
